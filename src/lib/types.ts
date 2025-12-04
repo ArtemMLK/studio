@@ -1,0 +1,37 @@
+export type UserRole = 'Participant' | 'Manager' | 'Analyst' | 'Administrator';
+
+export type User = {
+  id: number;
+  login: string;
+  name: string;
+  surname: string;
+  phone: string;
+  telegram: string;
+  roles: UserRole[];
+  branches: string[];
+  isBlacklisted: boolean;
+  avatar: string;
+};
+
+export type LotStatus = 'Активен' | 'Завершен' | 'Приостановлен' | 'Отменен';
+
+export type Lot = {
+  id: string;
+  title: string;
+  procurementId: string;
+  plan: number;
+  price: number;
+  currency: string;
+  deadline: string;
+  status: LotStatus;
+  imageUrl: string;
+  imageHint: string;
+};
+
+export type Kpi = {
+  title: string;
+  value: string;
+  change: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+};

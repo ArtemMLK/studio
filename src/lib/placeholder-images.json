@@ -1,3 +1,40 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "lot-1",
+      "description": "Modern office space",
+      "imageUrl": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxvZmZpY2UlMjBidWlsZGluZ3xlbnwwfHx8fDE3NjQ4Mjc1ODR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "office building"
+    },
+    {
+      "id": "lot-2",
+      "description": "Construction materials",
+      "imageUrl": "https://images.unsplash.com/photo-1609867271967-a82f85c48531?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjb25zdHJ1Y3Rpb24lMjBtYXRlcmlhbHN8ZW58MHx8fHwxNzY0ODY5MzM2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "construction materials"
+    },
+    {
+      "id": "lot-3",
+      "description": "IT equipment",
+      "imageUrl": "https://images.unsplash.com/photo-1620368523635-df9d83338fc1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjb21wdXRlciUyMGhhcmR3YXJlfGVufDB8fHx8MTc2NDgzMjc0MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "computer hardware"
+    },
+    {
+      "id": "lot-4",
+      "description": "Fleet of vehicles",
+      "imageUrl": "https://images.unsplash.com/photo-1560879052-0cccc41ec8fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxkZWxpdmVyeSUyMHZhbnN8ZW58MHx8fHwxNzY0ODg0NDMxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "delivery vans"
+    },
+    {
+      "id": "lot-5",
+      "description": "Office furniture",
+      "imageUrl": "https://images.unsplash.com/photo-1595846265893-f433f6cca81d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxvZmZpY2UlMjBmdXJuaXR1cmV8ZW58MHx8fHwxNzY0ODY5MzM2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "office furniture"
+    },
+    {
+      "id": "lot-6",
+      "description": "Security services",
+      "imageUrl": "https://images.unsplash.com/photo-1589935447067-5531094415d1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzZWN1cml0eSUyMGNhbWVyYXxlbnwwfHx8fDE3NjQ4NjIwNTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "security camera"
+    }
+  ]
 }
