@@ -35,3 +35,13 @@ export type Kpi = {
   icon: React.ComponentType<{ className?: string }>;
   description: string;
 };
+
+export const userRoles: UserRole[] = ['Администратор', 'Менеджер', 'Аналитик', 'Участник'];
+
+export const branches = [
+  'Центральный офис',
+  'Филиал "Север"',
+  'Филиал "Юг"',
+  'Филиал "Запад"',
+  'Филиал "Восток"',
+];

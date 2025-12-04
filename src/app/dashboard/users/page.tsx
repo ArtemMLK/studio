@@ -1,8 +1,11 @@
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+'use client';
 
+import { MoreHorizontal } from 'lucide-react';
+import { useState } from 'react';
+
+import { AddUserDialog } from '@/components/add-user-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -26,10 +29,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { users } from '@/lib/mock-data';
+import { users as initialUsers } from '@/lib/mock-data';
+import type { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 export default function UsersPage() {
+  const [users, setUsers] = useState<User[]>(initialUsers);
+
+  const handleUserAdded = (newUser: User) => {
+    setUsers((prevUsers) => [...prevUsers, newUser]);
+  };
+
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
@@ -40,15 +51,15 @@ export default function UsersPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" /> Добавить пользователя
-          </Button>
+          <AddUserDialog onUserAdded={handleUserAdded} existingUsers={users} />
         </div>
       </div>
       <Card>
         <CardHeader>
-            <CardTitle>Список пользователей</CardTitle>
-            <CardDescription>Все зарегистрированные пользователи системы.</CardDescription>
+          <CardTitle>Список пользователей</CardTitle>
+          <CardDescription>
+            Все зарегистрированные пользователи системы.
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -57,7 +68,9 @@ export default function UsersPage() {
                 <TableHead>Пользователь</TableHead>
                 <TableHead>Роли</TableHead>
                 <TableHead className="hidden md:table-cell">Телефон</TableHead>
-                <TableHead className="hidden md:table-cell">Филиалы</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  Филиалы
+                </TableHead>
                 <TableHead>Статус</TableHead>
                 <TableHead>
                   <span className="sr-only">Действия</span>
@@ -89,18 +102,27 @@ export default function UsersPage() {
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {user.roles.map((role) => (
-                        <Badge key={role} variant={
-                          role === 'Администратор' ? 'default' :
-                          role === 'Менеджер' ? 'secondary' :
-                          role === 'Аналитик' ? 'outline' :
-                          'destructive'
-                        }
-                        className={cn(
-                            role === 'Администратор' && 'bg-blue-600/20 text-blue-800 border-transparent hover:bg-blue-600/30 dark:text-blue-300',
-                            role === 'Менеджер' && 'bg-purple-600/20 text-purple-800 border-transparent hover:bg-purple-600/30 dark:text-purple-300',
-                            role === 'Аналитик' && 'bg-yellow-600/20 text-yellow-800 border-transparent hover:bg-yellow-600/30 dark:text-yellow-300',
-                            role === 'Участник' && 'bg-gray-600/20 text-gray-800 border-transparent hover:bg-gray-600/30 dark:text-gray-300'
-                        )}
+                        <Badge
+                          key={role}
+                          variant={
+                            role === 'Администратор'
+                              ? 'default'
+                              : role === 'Менеджер'
+                                ? 'secondary'
+                                : role === 'Аналитик'
+                                  ? 'outline'
+                                  : 'destructive'
+                          }
+                          className={cn(
+                            role === 'Администратор' &&
+                              'bg-blue-600/20 text-blue-800 border-transparent hover:bg-blue-600/30 dark:text-blue-300',
+                            role === 'Менеджер' &&
+                              'bg-purple-600/20 text-purple-800 border-transparent hover:bg-purple-600/30 dark:text-purple-300',
+                            role === 'Аналитик' &&
+                              'bg-yellow-600/20 text-yellow-800 border-transparent hover:bg-yellow-600/30 dark:text-yellow-300',
+                            role === 'Участник' &&
+                              'bg-gray-600/20 text-gray-800 border-transparent hover:bg-gray-600/30 dark:text-gray-300'
+                          )}
                         >
                           {role}
                         </Badge>
@@ -114,10 +136,12 @@ export default function UsersPage() {
                     {user.branches.join(', ')}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.isBlacklisted ? 'destructive' : 'default'}
-                    className={cn(
-                        !user.isBlacklisted && 'bg-green-600/20 text-green-800 border-transparent hover:bg-green-600/30 dark:text-green-300',
-                    )}
+                    <Badge
+                      variant={user.isBlacklisted ? 'destructive' : 'default'}
+                      className={cn(
+                        !user.isBlacklisted &&
+                          'bg-green-600/20 text-green-800 border-transparent hover:bg-green-600/30 dark:text-green-300'
+                      )}
                     >
                       {user.isBlacklisted ? 'Заблокирован' : 'Активен'}
                     </Badge>
@@ -140,7 +164,9 @@ export default function UsersPage() {
                         <DropdownMenuItem>Сбросить пароль</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">
-                          {user.isBlacklisted ? 'Разблокировать' : 'Заблокировать'}
+                          {user.isBlacklisted
+                            ? 'Разблокировать'
+                            : 'Заблокировать'}
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">
                           Удалить
