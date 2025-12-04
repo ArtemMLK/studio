@@ -1,8 +1,10 @@
 'use client';
 
-import { CubeTransparentIcon } from '@heroicons/react/24/outline';
 import { Fingerprint } from 'lucide-react';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 
+import { login } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -14,8 +16,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { login } from '@/app/actions';
-import { useFormState, useFormStatus } from 'react-dom';
 
 function LoginButton() {
   const { pending } = useFormStatus();
@@ -27,7 +27,7 @@ function LoginButton() {
 }
 
 export default function LoginPage() {
-  const [state, dispatch] = useFormState(login, undefined);
+  const [state, dispatch] = useActionState(login, undefined);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
