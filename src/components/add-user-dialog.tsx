@@ -256,11 +256,12 @@ export function AddUserDialog({
                                 value={role}
                                 key={role}
                                 onSelect={() => {
-                                  const currentRoles = form.getValues('roles');
-                                  const newValue = currentRoles.includes(role)
-                                    ? currentRoles.filter((r) => r !== role)
-                                    : [...currentRoles, role];
-                                  form.setValue('roles', newValue, { shouldValidate: true });
+                                  form.setValue(
+                                    'roles',
+                                    field.value.includes(role)
+                                      ? field.value.filter((r) => r !== role)
+                                      : [...field.value, role]
+                                  );
                                 }}
                               >
                                 <Check
@@ -324,8 +325,10 @@ export function AddUserDialog({
                              {newBranch ? (
                                 <div
                                   className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none"
-                                  onSelect={handleCreateNewBranch}
-                                  onClick={handleCreateNewBranch}
+                                  onClick={() => {
+                                    handleCreateNewBranch();
+                                    setNewBranch('');
+                                  }}
                                 >
                                   <PlusCircle className="mr-2 h-4 w-4" />
                                   Создать филиал "{newBranch}"
@@ -338,13 +341,12 @@ export function AddUserDialog({
                                 value={branch}
                                 key={branch}
                                 onSelect={() => {
-                                  const currentBranches = form.getValues('branches');
-                                  const newValue = currentBranches.includes(branch)
-                                    ? currentBranches.filter(
-                                        (b) => b !== branch
-                                      )
-                                    : [...currentBranches, branch];
-                                  form.setValue('branches', newValue, { shouldValidate: true });
+                                   form.setValue(
+                                    'branches',
+                                    field.value.includes(branch)
+                                      ? field.value.filter((b) => b !== branch)
+                                      : [...field.value, branch]
+                                  );
                                 }}
                               >
                                 <Check
