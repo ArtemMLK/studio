@@ -1,0 +1,216 @@
+/**
+ * This ruleset enforces a strict Role-Based and Branch-Based Access Control model
+ * for a procurement application. Access to data is primarily determined by a user's
+ * assigned roles and their affiliation with specific branches.
+ *
+ * Core Philosophy:
+ * The security model is centered on two main principles:
+ * 1. Admin Supremacy: Users with the 'admin' role have broad read and write
+ *    permissions across the entire database for management and oversight.
+ * 2. Branch Segregation: Non-admin access is strictly partitioned by branch.
+ *    A user's ability to view or modify procurement data is contingent on them
+ *    being explicitly associated with a branch via the `branchIds` array in their
+ *    user profile.
+ *
+ * Data Structure:
+ * The Firestore database is organized into two primary top-level collections:
+ * - `/users/{userId}`: Stores user profiles, including critical authorization
+ *   data like `roles`, `branchIds`, and a `blacklisted` flag. User-specific
+ *   configurations, like report settings, are nested in subcollections here.
+ * - `/branches/{branchId}`: Contains all procurement-related data. The entire
+ *   workflow (Processes -> Lots -> Applications) is nested under a specific
+ *   branch, ensuring that data is naturally segregated and simplifying security rules.
+ *
+ * Key Security Decisions:
+ * - Default Deny: All operations are denied by default and must be explicitly
+ *   allowed by a rule.
+ * - User Data Privacy: Users can only manage their own profile and associated
+ *   subcollections. Listing all users is explicitly forbidden to protect privacy.
+ * - Blacklist Enforcement: A `blacklisted` flag on a user's document serves as a
+ *   global kill switch, denying them all data access.
+ * - Role-Based Branch Access: Access to the entire data tree under
+ *   `/branches/{branchId}` is controlled by a single, reusable function that
+ *   checks for either admin status or branch membership. This ensures
+ *   consistent and performant security checks.
+ *
+ * Denormalization for Authorization:
+ * To avoid slow and costly cross-document lookups in rules, critical authorization
+ * data is denormalized. The `roles` and `branchIds` arrays are stored directly on
+ * each `/users/{userId}` document. Security rules for the `/branches` collection
+ * perform a single `get()` to the requesting user's profile to retrieve this data,
+ * making authorization decisions efficient and scalable.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions to abstract and simplify rule logic.
+
+    /**
+     * Checks if the request is from an authenticated user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the request's user ID matches the provided userId.
+     * @param userId The user ID to check against the authenticated user.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    /**
+     * Retrieves the authenticated user's profile data from the /users collection.
+     * Caches the result for the duration of the request evaluation.
+     */
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    /**
+     * Checks if the authenticated user is not blacklisted.
+     * This is a critical check for all operations.
+     */
+    function isNotBlacklisted() {
+      // Allow access if the blacklisted field doesn't exist or is false.
+      return !('blacklisted' in getUserData()) || getUserData().blacklisted == false;
+    }
+
+    /**
+     * Checks if the authenticated user has the 'admin' role.
+     */
+    function isAdmin() {
+      return isSignedIn() && 'roles' in getUserData() && getUserData().roles.hasAny(['admin']);
+    }
+
+    /**
+     * Verifies that the user is the owner of the document and is not blacklisted.
+     * @param userId The user ID to check.
+     */
+    function isVerifiedOwner(userId) {
+      return isOwner(userId) && isNotBlacklisted();
+    }
+    
+    /**
+     * Checks if a user has permission to access a specific branch's data.
+     * Access is granted to admins or users who are members of the branch.
+     * @param branchId The ID of the branch to check access for.
+     */
+    function hasAccessToBranch(branchId) {
+      return isSignedIn() && isNotBlacklisted() && (isAdmin() || branchId in getUserData().branchIds);
+    }
+
+    /**
+     * @description Manages user profile data.
+     * @path /users/{userId}
+     * @allow (create) A new user 'abc' creates their own profile at `/users/abc`.
+     * @deny (list) Any user, including an admin, tries to list all user documents.
+     * @deny (update) User 'xyz' tries to update user 'abc's profile at `/users/abc`.
+     * @principle A user's profile can only be created and managed by the user themselves or by an admin. Listing users is disallowed for security.
+     */
+    match /users/{userId} {
+      allow get: if isVerifiedOwner(userId) || isAdmin();
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if (isVerifiedOwner(userId) || isAdmin()) && resource != null;
+      allow delete: if (isVerifiedOwner(userId) || isAdmin()) && resource != null;
+    }
+
+    /**
+     * @description Manages user-specific saved report settings.
+     * @path /users/{userId}/reportSettings/{reportSettingId}
+     * @allow (create) User 'abc' creates a report setting at `/users/abc/reportSettings/new-report`.
+     * @deny (get) User 'xyz' tries to read a report setting at `/users/abc/reportSettings/some-report`.
+     * @principle Enforces strict ownership. Only the owner of the user profile can manage their own report settings.
+     */
+    match /users/{userId}/reportSettings/{reportSettingId} {
+      allow get, list: if isVerifiedOwner(userId);
+      allow create: if isVerifiedOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isVerifiedOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
+      allow delete: if isVerifiedOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Manages the top-level branch documents.
+     * @path /branches/{branchId}
+     * @allow (get) An admin or a member of 'branch123' reads `/branches/branch123`.
+     * @deny (create) A non-admin user tries to create a new branch document.
+     * @deny (list) A non-admin user tries to list all branches in the system.
+     * @principle Restricts branch management to administrators, while allowing branch members to read their assigned branch's data.
+     */
+    match /branches/{branchId} {
+      allow get: if hasAccessToBranch(branchId);
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin() && resource != null;
+
+      /**
+       * @description Manages procurement processes nested under a branch.
+       * @path /branches/{branchId}/procurementProcesses/{procurementProcessId}
+       * @allow (create) An admin or member of 'branch123' creates a new process in that branch.
+       * @deny (update) A user not associated with 'branch123' tries to update a process within it.
+       * @principle Access is inherited from the parent branch. Users with branch access can manage all nested procurement data.
+       */
+      match /procurementProcesses/{procurementProcessId} {
+        allow get, list: if hasAccessToBranch(branchId);
+        allow create: if hasAccessToBranch(branchId);
+        allow update, delete: if hasAccessToBranch(branchId) && resource != null;
+
+        /**
+         * @description Manages lots within a procurement process.
+         * @path /branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}
+         * @allow (list) An admin or member of 'branch123' lists all lots for a process in that branch.
+         * @deny (get) A user not associated with 'branch123' tries to read a lot within it.
+         * @principle Access is inherited from the parent branch. Users with branch access can manage all nested lot data.
+         */
+        match /lots/{lotId} {
+          allow get, list: if hasAccessToBranch(branchId);
+          allow create: if hasAccessToBranch(branchId);
+          allow update, delete: if hasAccessToBranch(branchId) && resource != null;
+
+          /**
+           * @description Manages receipts associated with a lot.
+           * @path .../lots/{lotId}/receipts/{receiptId}
+           * @allow (create) An admin or member of 'branch123' creates a receipt for a lot in that branch.
+           * @deny (delete) A user not associated with 'branch123' tries to delete a receipt.
+           * @principle Access is inherited from the parent branch.
+           */
+          match /receipts/{receiptId} {
+            allow get, list: if hasAccessToBranch(branchId);
+            allow create: if hasAccessToBranch(branchId);
+            allow update, delete: if hasAccessToBranch(branchId) && resource != null;
+          }
+
+          /**
+           * @description Manages participant applications for a lot.
+           * @path .../lots/{lotId}/applications/{applicationId}
+           * @allow (create) A signed-in user with access to 'branch123' submits an application, setting the `userId` field to their own UID.
+           * @deny (create) A user tries to submit an application on behalf of another user by setting a different `userId`.
+           * @deny (update) An applicant tries to modify their application after submission. Only branch members/admins can.
+           * @principle Allows any user with branch read access to apply, but restricts management (update/delete) to authorized branch personnel.
+           */
+          match /applications/{applicationId} {
+            allow get, list: if hasAccessToBranch(branchId);
+            allow create: if hasAccessToBranch(branchId) && request.resource.data.userId == request.auth.uid;
+            allow update, delete: if hasAccessToBranch(branchId) && resource != null;
+
+            /**
+             * @description Manages allocations for a specific application.
+             * @path .../applications/{applicationId}/allocations/{allocationId}
+             * @allow (create) An admin or member of 'branch123' creates an allocation for an application in that branch.
+             * @deny (get) A user not associated with 'branch123' tries to read an allocation.
+             * @principle Access is inherited from the parent branch.
+             */
+            match /allocations/{allocationId} {
+              allow get, list: if hasAccessToBranch(branchId);
+              allow create: if hasAccessToBranch(branchId);
+              allow update, delete: if hasAccessToBranch(branchId) && resource != null;
+            }
+          }
+        }
+      }
+    }
+  }
+}

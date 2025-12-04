@@ -1,0 +1,518 @@
+{
+  "entities": {
+    "Branch": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Branch",
+      "type": "object",
+      "description": "Represents a branch or object (e.g., residential complex) within the procurement system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Branch entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the branch."
+        },
+        "address": {
+          "type": "string",
+          "description": "The address of the branch."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "The contact person for the branch."
+        },
+        "contactPhone": {
+          "type": "string",
+          "description": "The contact phone number for the branch."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "ProcurementProcess": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProcurementProcess",
+      "type": "object",
+      "description": "Represents a procurement process.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ProcurementProcess entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the procurement process."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the procurement process."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The start date of the procurement process.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The end date of the procurement process.",
+          "format": "date-time"
+        },
+        "branchId": {
+          "type": "string",
+          "description": "Reference to Branch. (Relationship: Branch 1:N ProcurementProcess)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "branchId"
+      ]
+    },
+    "Lot": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Lot",
+      "type": "object",
+      "description": "Represents a lot within a procurement process.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Lot entity."
+        },
+        "procurementProcessId": {
+          "type": "string",
+          "description": "Reference to ProcurementProcess. (Relationship: ProcurementProcess 1:N Lot)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the lot."
+        },
+        "plan": {
+          "type": "string",
+          "description": "The plan for the lot."
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the lot."
+        },
+        "deadline": {
+          "type": "string",
+          "description": "The deadline for the lot.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the lot."
+        }
+      },
+      "required": [
+        "id",
+        "procurementProcessId",
+        "name"
+      ]
+    },
+    "Application": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Application",
+      "type": "object",
+      "description": "Represents a participant application for a lot.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Application entity."
+        },
+        "lotId": {
+          "type": "string",
+          "description": "Reference to Lot. (Relationship: Lot 1:N Application)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Application)"
+        },
+        "applicationDate": {
+          "type": "string",
+          "description": "The date of the application.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the application."
+        }
+      },
+      "required": [
+        "id",
+        "lotId",
+        "userId"
+      ]
+    },
+    "Receipt": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Receipt",
+      "type": "object",
+      "description": "Represents a receipt for a lot.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Receipt entity."
+        },
+        "lotId": {
+          "type": "string",
+          "description": "Reference to Lot. (Relationship: Lot 1:N Receipt)"
+        },
+        "receiptDate": {
+          "type": "string",
+          "description": "The date of the receipt.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the receipt."
+        }
+      },
+      "required": [
+        "id",
+        "lotId"
+      ]
+    },
+    "Allocation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Allocation",
+      "type": "object",
+      "description": "Represents an allocation (issuance) for an application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Allocation entity."
+        },
+        "applicationId": {
+          "type": "string",
+          "description": "Reference to Application. (Relationship: Application 1:N Allocation)"
+        },
+        "allocationDate": {
+          "type": "string",
+          "description": "The date of the allocation.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the allocation."
+        }
+      },
+      "required": [
+        "id",
+        "applicationId"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "login": {
+          "type": "string",
+          "description": "The user's login username."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's first name."
+        },
+        "surname": {
+          "type": "string",
+          "description": "The user's last name."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The user's phone number."
+        },
+        "telegram": {
+          "type": "string",
+          "description": "The user's Telegram username."
+        },
+        "roles": {
+          "type": "array",
+          "description": "The roles assigned to the user.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "branchIds": {
+          "type": "array",
+          "description": "References to Branches that the user belongs to. (Relationship: User N:N Branch)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blacklisted": {
+          "type": "boolean",
+          "description": "Flag indicating if the user is blacklisted."
+        }
+      },
+      "required": [
+        "id",
+        "login",
+        "name",
+        "surname"
+      ]
+    },
+    "ReportSetting": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ReportSetting",
+      "type": "object",
+      "description": "Represents saved settings for a custom report.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ReportSetting entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the report setting."
+        },
+        "entity": {
+          "type": "string",
+          "description": "The main entity for the report."
+        },
+        "fields": {
+          "type": "array",
+          "description": "The fields to include in the report.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "filters": {
+          "type": "array",
+          "description": "The filters to apply to the report.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "groupings": {
+          "type": "array",
+          "description": "The groupings to apply to the report.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sorting": {
+          "type": "array",
+          "description": "The sorting to apply to the report.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N ReportSetting)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "entity",
+        "userId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user data, including roles and branch affiliations. Includes 'branchIds' to determine the branches the user has access to. Includes 'roles' to determine administrative access. Includes 'blacklisted' flag to prevent logins.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/branches/{branchId}",
+        "definition": {
+          "entityName": "Branch",
+          "schema": {
+            "$ref": "#/backend/entities/Branch"
+          },
+          "description": "Stores branch information.",
+          "params": [
+            {
+              "name": "branchId",
+              "description": "The unique identifier of the branch."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/branches/{branchId}/procurementProcesses/{procurementProcessId}",
+        "definition": {
+          "entityName": "ProcurementProcess",
+          "schema": {
+            "$ref": "#/backend/entities/ProcurementProcess"
+          },
+          "description": "Stores procurement processes for a specific branch.",
+          "params": [
+            {
+              "name": "branchId",
+              "description": "The unique identifier of the branch."
+            },
+            {
+              "name": "procurementProcessId",
+              "description": "The unique identifier of the procurement process."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}",
+        "definition": {
+          "entityName": "Lot",
+          "schema": {
+            "$ref": "#/backend/entities/Lot"
+          },
+          "description": "Stores lots for a specific procurement process within a branch.",
+          "params": [
+            {
+              "name": "branchId",
+              "description": "The unique identifier of the branch."
+            },
+            {
+              "name": "procurementProcessId",
+              "description": "The unique identifier of the procurement process."
+            },
+            {
+              "name": "lotId",
+              "description": "The unique identifier of the lot."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}/applications/{applicationId}",
+        "definition": {
+          "entityName": "Application",
+          "schema": {
+            "$ref": "#/backend/entities/Application"
+          },
+          "description": "Stores applications for a specific lot within a procurement process and branch.",
+          "params": [
+            {
+              "name": "branchId",
+              "description": "The unique identifier of the branch."
+            },
+            {
+              "name": "procurementProcessId",
+              "description": "The unique identifier of the procurement process."
+            },
+            {
+              "name": "lotId",
+              "description": "The unique identifier of the lot."
+            },
+            {
+              "name": "applicationId",
+              "description": "The unique identifier of the application."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}/receipts/{receiptId}",
+        "definition": {
+          "entityName": "Receipt",
+          "schema": {
+            "$ref": "#/backend/entities/Receipt"
+          },
+          "description": "Stores receipts for a specific lot within a procurement process and branch.",
+          "params": [
+            {
+              "name": "branchId",
+              "description": "The unique identifier of the branch."
+            },
+            {
+              "name": "procurementProcessId",
+              "description": "The unique identifier of the procurement process."
+            },
+            {
+              "name": "lotId",
+              "description": "The unique identifier of the lot."
+            },
+            {
+              "name": "receiptId",
+              "description": "The unique identifier of the receipt."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}/applications/{applicationId}/allocations/{allocationId}",
+        "definition": {
+          "entityName": "Allocation",
+          "schema": {
+            "$ref": "#/backend/entities/Allocation"
+          },
+          "description": "Stores allocations for a specific application within a lot, procurement process, and branch.",
+          "params": [
+            {
+              "name": "branchId",
+              "description": "The unique identifier of the branch."
+            },
+            {
+              "name": "procurementProcessId",
+              "description": "The unique identifier of the procurement process."
+            },
+            {
+              "name": "lotId",
+              "description": "The unique identifier of the lot."
+            },
+            {
+              "name": "applicationId",
+              "description": "The unique identifier of the application."
+            },
+            {
+              "name": "allocationId",
+              "description": "The unique identifier of the allocation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/reportSettings/{reportSettingId}",
+        "definition": {
+          "entityName": "ReportSetting",
+          "schema": {
+            "$ref": "#/backend/entities/ReportSetting"
+          },
+          "description": "Stores report settings for a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "reportSettingId",
+              "description": "The unique identifier of the report setting."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure Authorization Independence, Role-Based Access Control, and efficient data retrieval for the ProcurementFlow application. The design emphasizes denormalization and structural segregation to minimize the need for complex security rules and `get()` calls, adhering to the DBAC principle (Database-Based Access Control) and QAPs (Rules are not Filters).  \n\n**Authorization Independence and Role-Based Access Control:**\n\n*   **Users:** User roles and branch affiliations are stored directly within the `/users/{userId}` document, enabling rules to authorize access based on `request.auth.uid` without needing to `get()` data from other collections.  The `branchIds` field enables filtering data by branch.\n*   **Branches:**  Branches are stored in the `/branches/{branchId}` collection.\n*   **Procurement Processes, Lots, Applications, Receipts, Allocations:**  These entities are nested under the respective branch documents (`/branches/{branchId}/procurementProcesses/{procurementProcessId}`, `/branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}`, `/branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}/applications/{applicationId}`, etc.). This structure facilitates branch-specific data isolation and authorization.  Since data is segregated by branch, branch access control can be implemented at the top level.\n*   **Report Settings:** Report settings are owned by users and stored in the `/users/{userId}/reportSettings/{reportSettingId}` collection.\n\n**Data Filtering and Aggregation (QAPs):**\n\n*   The structure supports efficient filtering by branch, as all relevant data for a branch is located under the `/branches/{branchId}` document. Aggregation can be performed by querying all documents under a branch or across multiple branches (for Admins/Analysts).  Since data is segregated by branch, list operations will naturally be secure.\n\n**Authorization Independence Details:**\n\n*   Access to `ProcurementProcesses`, `Lots`, `Applications`, `Receipts`, and `Allocations` is controlled by the branch to which they belong. The relevant branch ID is present in each of these nested documents, eliminating the need to `get()` the branch document in security rules.  While the data is not duplicated into each document, it is contained by the top level `branchId`, which simplifies the queries and assures that the data is related to the proper branch.  The alternative would be denormalizing the role or branch information into each document.\n\n**Secure Sessions, User Management, and Blacklist Functionality:**\n\n*   These functionalities are handled at the application level using Firebase Authentication and the data stored in the `/users/{userId}` documents. Blacklisted users can be prevented from logging in by checking the `blacklisted` field during authentication."
+  }
+}
