@@ -42,9 +42,8 @@ export function UsersTable() {
     password;
   } | null>(null);
 
-  const handleUserAdded = (newUser: User) => {
+  const handleUserAdded = (newUser: User, generatedPassword) => {
     setUsers((prevUsers) => [newUser, ...prevUsers]);
-    const generatedPassword = Math.random().toString(36).slice(-8);
     setCredentials({ login: newUser.login, password: generatedPassword });
   };
 

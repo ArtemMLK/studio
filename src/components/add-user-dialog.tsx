@@ -42,7 +42,7 @@ import { branches as initialBranches, userRoles, type User, type UserRole } from
 import { cn } from '@/lib/utils';
 
 interface AddUserDialogProps {
-  onUserAdded: (newUser: User) => void;
+  onUserAdded: (newUser: User, generatedPassword) => void;
   existingUsers: User[];
 }
 
@@ -118,6 +118,7 @@ export function AddUserDialog({
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const newId = Math.max(...existingUsers.map((u) => u.id), 0) + 1;
+    const generatedPassword = Math.random().toString(36).slice(-8);
 
     const newUser: User = {
       id: newId,
@@ -127,7 +128,7 @@ export function AddUserDialog({
       avatar: `https://i.pravatar.cc/150?u=${values.login}`,
     };
 
-    onUserAdded(newUser);
+    onUserAdded(newUser, generatedPassword);
     setOpen(false);
     form.reset();
   }
@@ -319,10 +320,11 @@ export function AddUserDialog({
                           onValueChange={setNewBranch}
                         />
                         <CommandList>
-                          <CommandEmpty>
+                           <CommandEmpty>
                              {newBranch ? (
-                                <CommandItem
-                                  onSelect={() => {
+                                <div
+                                  className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none"
+                                  onClick={() => {
                                     if (newBranch && !branches.includes(newBranch)) {
                                       const updatedBranches = [...branches, newBranch];
                                       setBranches(updatedBranches);
@@ -334,7 +336,7 @@ export function AddUserDialog({
                                 >
                                   <PlusCircle className="mr-2 h-4 w-4" />
                                   Создать филиал "{newBranch}"
-                                </CommandItem>
+                                </div>
                               ) : "Филиал не найден."}
                           </CommandEmpty>
                           <CommandGroup>
