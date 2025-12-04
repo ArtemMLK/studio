@@ -10,6 +10,8 @@ import {
   Users,
   LineChart,
   Settings,
+  Receipt,
+  PackageCheck,
 } from 'lucide-react';
 import {
   SidebarMenu,
@@ -23,6 +25,8 @@ const navItems = [
   { href: '/dashboard/procurements', label: 'Закупки', icon: ShoppingBasket },
   { href: '/dashboard/lots', label: 'Лоты', icon: Box },
   { href: '/dashboard/applications', label: 'Заявки', icon: FileText },
+  { href: '/dashboard/receipts', label: 'Поступления', icon: Receipt },
+  { href: '/dashboard/allocations', label: 'Распределения', icon: PackageCheck },
   { href: '/dashboard/branches', label: 'Филиалы', icon: Building2 },
   { href: '/dashboard/users', label: 'Пользователи', icon: Users },
   { href: '/dashboard/reports', label: 'Отчеты', icon: LineChart },
