@@ -33,13 +33,31 @@ import { users as initialUsers } from '@/lib/mock-data';
 import type { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { NewUserCredentialsDialog } from '@/components/new-user-credentials-dialog';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>(initialUsers);
+  const [credentials, setCredentials] = useState<{
+    login: string;
+    password;
+  } | null>(null);
 
   const handleUserAdded = (newUser: User) => {
     setUsers((prevUsers) => [...prevUsers, newUser]);
+    const generatedPassword = Math.random().toString(36).slice(-8);
+    setCredentials({ login: newUser.login, password: generatedPassword });
   };
+
+  const handleResetPassword = (userLogin: string) => {
+    const newPassword = Math.random().toString(36).slice(-8);
+    setCredentials({ login: userLogin, password: newPassword });
+    // Here you would also update the user's password hash in the database
+  };
+
+  const toggleUserBlacklist = (userId: number) => {
+    setUsers(users.map(u => u.id === userId ? {...u, isBlacklisted: !u.isBlacklisted} : u));
+  };
+
 
   return (
     <>
@@ -161,9 +179,14 @@ export default function UsersPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Действия</DropdownMenuLabel>
                         <DropdownMenuItem>Редактировать</DropdownMenuItem>
-                        <DropdownMenuItem>Сбросить пароль</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleResetPassword(user.login)}>
+                          Сбросить пароль
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => toggleUserBlacklist(user.id)}
+                        >
                           {user.isBlacklisted
                             ? 'Разблокировать'
                             : 'Заблокировать'}
@@ -180,6 +203,13 @@ export default function UsersPage() {
           </Table>
         </CardContent>
       </Card>
+       {credentials && (
+        <NewUserCredentialsDialog
+          login={credentials.login}
+          password={credentials.password}
+          onClose={() => setCredentials(null)}
+        />
+      )}
     </>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Check, ChevronsUpDown, Copy, PlusCircle } from 'lucide-react';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -19,7 +19,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -41,7 +40,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { NewUserCredentialsDialog } from './new-user-credentials-dialog';
+import { PlusCircle } from 'lucide-react';
 
 interface AddUserDialogProps {
   onUserAdded: (newUser: User) => void;
@@ -53,10 +52,6 @@ export function AddUserDialog({
   existingUsers,
 }: AddUserDialogProps) {
   const [open, setOpen] = useState(false);
-  const [credentials, setCredentials] = useState<{
-    login: string;
-    password;
-  } | null>(null);
 
   const formSchema = z
     .object({
@@ -114,8 +109,7 @@ export function AddUserDialog({
   function onSubmit(values: z.infer<typeof formSchema>) {
     const newId =
       Math.max(...existingUsers.map((u) => u.id), 0) + 1;
-    const generatedPassword = Math.random().toString(36).slice(-8);
-
+    
     const newUser: User = {
       id: newId,
       ...values,
@@ -125,7 +119,6 @@ export function AddUserDialog({
     };
 
     onUserAdded(newUser);
-    setCredentials({ login: newUser.login, password: generatedPassword });
     setOpen(false);
     form.reset();
   }
@@ -346,13 +339,6 @@ export function AddUserDialog({
           </Form>
         </DialogContent>
       </Dialog>
-      {credentials && (
-        <NewUserCredentialsDialog
-          login={credentials.login}
-          password={credentials.password}
-          onClose={() => setCredentials(null)}
-        />
-      )}
     </>
   );
 }
