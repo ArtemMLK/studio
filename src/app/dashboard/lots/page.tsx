@@ -1,5 +1,9 @@
+'use client';
+
 import Image from 'next/image';
-import { PlusCircle, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { useState } from 'react';
+import { AddLotDialog } from '@/components/add-lot-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,11 +14,26 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { lots } from '@/lib/mock-data';
-import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { lots as initialLots } from '@/lib/mock-data';
+import type { Lot } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 export default function LotsPage() {
+  const [lots, setLots] = useState<Lot[]>(initialLots);
+
+  const handleLotAdded = (newLotData: Omit<Lot, 'id' | 'status' | 'procurementId'>) => {
+     const newLot: Lot = {
+      ...newLotData,
+      id: `L${Math.random().toString(16).slice(2, 8)}`,
+      status: 'Активен',
+      procurementId: 'ЗАК-2024-002',
+      imageHint: 'custom lot',
+    };
+    setLots((prev) => [newLot, ...prev]);
+  };
+
+
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
@@ -25,9 +44,7 @@ export default function LotsPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" /> Добавить лот
-          </Button>
+           <AddLotDialog onLotAdded={handleLotAdded} />
         </div>
       </div>
       <div className="relative">
@@ -49,13 +66,16 @@ export default function LotsPage() {
               </div>
             </CardHeader>
             <CardContent className="flex-grow p-4">
-               <Badge
+              <Badge
                 variant="outline"
                 className={cn(
                   'mb-2',
-                  lot.status === 'Активен' && 'border-green-500/50 text-green-400',
-                  lot.status === 'Завершен' && 'border-gray-500/50 text-gray-400',
-                  lot.status === 'Приостановлен' && 'border-yellow-500/50 text-yellow-400',
+                  lot.status === 'Активен' &&
+                    'border-green-500/50 text-green-400',
+                  lot.status === 'Завершен' &&
+                    'border-gray-500/50 text-gray-400',
+                  lot.status === 'Приостановлен' &&
+                    'border-yellow-500/50 text-yellow-400',
                   lot.status === 'Отменен' && 'border-red-500/50 text-red-400'
                 )}
               >
@@ -67,9 +87,9 @@ export default function LotsPage() {
               </p>
             </CardContent>
             <CardFooter className="flex justify-between p-4 pt-0">
-                <p className="text-xs text-muted-foreground">
-                    До: {lot.deadline}
-                </p>
+              <p className="text-xs text-muted-foreground">
+                До: {lot.deadline}
+              </p>
               <Button variant="outline" size="sm">
                 Подробнее
               </Button>
