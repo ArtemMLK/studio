@@ -1,7 +1,6 @@
 'use client';
 
 import { MoreHorizontal } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 import { AddBranchDialog } from '@/components/add-branch-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -28,43 +27,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { branches as initialBranches } from '@/lib/types';
 import { cn } from '@/lib/utils';
-
-export type Branch = {
-  id: number;
-  name: string;
-  address: string;
-  head: string;
-  userCount: number;
-  status: 'Активен' | 'Неактивен';
-};
+import { addBranch, useBranches } from '@/firebase/firestore/branches';
+import { Branch } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function BranchesPage() {
-  const [branches, setBranches] = useState<Branch[]>([]);
-
-  useEffect(() => {
-    const branchData: Branch[] = initialBranches.map((branchName, index) => ({
-      id: index + 1,
-      name: branchName,
-      address: `г. Город, ул. Улица, д. ${index + 1}`,
-      head: ['Иванов И.И.', 'Петров П.П.', 'Сидоров С.С.'][index % 3],
-      userCount: Math.floor(Math.random() * 20) + 1,
-      status: Math.random() > 0.2 ? 'Активен' : 'Неактивен',
-    }));
-    setBranches(branchData);
-  }, []);
+  const { data: branches, loading } = useBranches();
 
   const handleBranchAdded = (newBranchData: Omit<Branch, 'id' | 'userCount' | 'status'>) => {
-    const newBranch: Branch = {
-        ...newBranchData,
-        id: Math.max(...branches.map((b) => b.id), 0) + 1,
-        userCount: 0,
-        status: 'Активен',
+    const newBranch: Omit<Branch, 'id'> = {
+      ...newBranchData,
+      userCount: 0,
+      status: 'Активен',
     };
-    setBranches((prev) => [newBranch, ...prev]);
+    addBranch(newBranch);
   };
-
 
   return (
     <>
@@ -99,43 +77,56 @@ export default function BranchesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {branches.map((branch) => (
-                <TableRow key={branch.id}>
-                  <TableCell className="font-medium">{branch.name}</TableCell>
-                  <TableCell>{branch.address}</TableCell>
-                  <TableCell className="hidden md:table-cell">{branch.head}</TableCell>
-                   <TableCell className="hidden md:table-cell">{branch.userCount}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={branch.status === 'Активен' ? 'outline' : 'destructive'}
-                       className={cn(
-                        branch.status === 'Активен' && 'border-green-500/50 text-green-400'
-                       )}
-                    >
-                      {branch.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          aria-haspopup="true"
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Меню</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Действия</DropdownMenuLabel>
-                        <DropdownMenuItem>Редактировать</DropdownMenuItem>
-                        <DropdownMenuItem>Деактивировать</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-8" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                branches.map((branch) => (
+                  <TableRow key={branch.id}>
+                    <TableCell className="font-medium">{branch.name}</TableCell>
+                    <TableCell>{branch.address}</TableCell>
+                    <TableCell className="hidden md:table-cell">{branch.head}</TableCell>
+                    <TableCell className="hidden md:table-cell">{branch.userCount}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={branch.status === 'Активен' ? 'outline' : 'destructive'}
+                        className={cn(
+                          branch.status === 'Активен' && 'border-green-500/50 text-green-400'
+                        )}
+                      >
+                        {branch.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            aria-haspopup="true"
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Меню</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Действия</DropdownMenuLabel>
+                          <DropdownMenuItem>Редактировать</DropdownMenuItem>
+                          <DropdownMenuItem>Деактивировать</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

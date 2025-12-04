@@ -2,7 +2,7 @@
 export type UserRole = 'Участник' | 'Менеджер' | 'Аналитик' | 'Администратор';
 
 export type User = {
-  id: number;
+  id: string;
   login: string;
   name: string;
   surname: string;
@@ -36,6 +36,16 @@ export type Kpi = {
   icon: React.ComponentType<{ className?: string }>;
   description: string;
 };
+
+export type Branch = {
+  id: string;
+  name: string;
+  address: string;
+  head: string;
+  userCount: number;
+  status: 'Активен' | 'Неактивен';
+};
+
 
 export const userRoles: UserRole[] = ['Администратор', 'Менеджер', 'Аналитик', 'Участник'];
 
