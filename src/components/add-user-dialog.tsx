@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -25,7 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { branches, userRoles, type User, type UserRole } from '@/lib/types';
+import { userRoles as initialUserRoles, branches as initialBranches, type User, type UserRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
   Popover,
@@ -39,8 +39,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from '@/components/ui/command';
-import { PlusCircle } from 'lucide-react';
 
 interface AddUserDialogProps {
   onUserAdded: (newUser: User) => void;
@@ -52,6 +52,10 @@ export function AddUserDialog({
   existingUsers,
 }: AddUserDialogProps) {
   const [open, setOpen] = useState(false);
+  const [userRoles, setUserRoles] = useState<UserRole[]>(initialUserRoles);
+  const [branches, setBranches] = useState<string[]>(initialBranches);
+  const [newBranch, setNewBranch] = useState('');
+
 
   const formSchema = z
     .object({
@@ -105,6 +109,15 @@ export function AddUserDialog({
       branches: [],
     },
   });
+
+  function handleCreateNewBranch() {
+    if (newBranch && !branches.includes(newBranch)) {
+      const updatedBranches = [...branches, newBranch];
+      setBranches(updatedBranches);
+      form.setValue('branches', [...form.getValues('branches'), newBranch]);
+      setNewBranch('');
+    }
+  }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const newId =
@@ -243,10 +256,10 @@ export function AddUserDialog({
                                 <CommandItem
                                   value={role}
                                   key={role}
-                                  onSelect={() => {
-                                    const newValue = field.value.includes(role)
-                                      ? field.value.filter((r) => r !== role)
-                                      : [...field.value, role];
+                                  onSelect={(currentValue) => {
+                                    const newValue = field.value.includes(currentValue)
+                                      ? field.value.filter((r) => r !== currentValue)
+                                      : [...field.value, currentValue];
                                     field.onChange(newValue);
                                   }}
                                 >
@@ -288,26 +301,31 @@ export function AddUserDialog({
                             )}
                           >
                             {field.value?.length
-                              ? field.value.length > 1 ? `${field.value.length} филиалов выбрано` : field.value[0]
+                              ? field.value.length > 2 ? `${field.value.length} филиалов выбрано` : field.value.join(', ')
                               : 'Выберите филиалы'}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-[300px] p-0">
-                        <Command>
-                          <CommandInput placeholder="Поиск филиала..." />
+                        <Command onValueChange={setNewBranch} value={newBranch}>
+                          <CommandInput placeholder="Поиск или создание..." />
                           <CommandList>
-                            <CommandEmpty>Филиал не найден.</CommandEmpty>
+                            <CommandEmpty>
+                                <Button className='w-full' variant="outline" onClick={handleCreateNewBranch}>
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Создать филиал "{newBranch}"
+                                </Button>
+                            </CommandEmpty>
                             <CommandGroup>
                               {branches.map((branch) => (
                                 <CommandItem
                                   value={branch}
                                   key={branch}
-                                  onSelect={() => {
-                                    const newValue = field.value.includes(branch)
-                                      ? field.value.filter((b) => b !== branch)
-                                      : [...field.value, branch];
+                                  onSelect={(currentValue) => {
+                                    const newValue = field.value.includes(currentValue)
+                                      ? field.value.filter((b) => b !== currentValue)
+                                      : [...field.value, currentValue];
                                     field.onChange(newValue);
                                   }}
                                 >
@@ -322,8 +340,8 @@ export function AddUserDialog({
                                   {branch}
                                 </CommandItem>
                               ))}
-                            </CommandGroup>
-                            </CommandList>
+                             </CommandGroup>
+                           </CommandList>
                         </Command>
                       </PopoverContent>
                     </Popover>
