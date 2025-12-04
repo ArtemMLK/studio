@@ -39,7 +39,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { userRoles, type User, type UserRole } from '@/lib/types';
+import { userRoles, type User, type UserRole, type Branch } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useUsers } from '@/firebase/firestore/users';
 import { useBranches } from '@/firebase/firestore/branches';
@@ -57,15 +57,7 @@ export function AddUserDialog({
 
   const { data: existingUsers } = useUsers();
   const { data: branchesData } = useBranches();
-  const [branchNames, setBranchNames] = useState<string[]>([]);
   
-  useEffect(() => {
-      if(branchesData) {
-        setBranchNames(branchesData.map(b => b.name));
-      }
-  }, [branchesData])
-
-
   const formSchema = useMemo(() => z.object({
     name: z.string().min(2, 'Имя должно содержать не менее 2 символов.'),
     surname: z
@@ -319,28 +311,28 @@ export function AddUserDialog({
                         <CommandList>
                            <CommandEmpty>Филиал не найден.</CommandEmpty>
                           <CommandGroup>
-                            {branchNames.map((branch) => (
+                            {branchesData?.map((branch) => (
                               <CommandItem
-                                value={branch}
-                                key={branch}
+                                value={branch.name}
+                                key={branch.id}
                                 onSelect={() => {
                                    const currentValue = form.getValues('branchIds');
-                                   if (currentValue.includes(branch)) {
-                                     form.setValue('branchIds', currentValue.filter(b => b !== branch), { shouldValidate: true });
+                                   if (currentValue.includes(branch.name)) {
+                                     form.setValue('branchIds', currentValue.filter(b => b !== branch.name), { shouldValidate: true });
                                    } else {
-                                     form.setValue('branchIds', [...currentValue, branch], { shouldValidate: true });
+                                     form.setValue('branchIds', [...currentValue, branch.name], { shouldValidate: true });
                                    }
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     'mr-2 h-4 w-4',
-                                    field.value.includes(branch)
+                                    field.value.includes(branch.name)
                                       ? 'opacity-100'
                                       : 'opacity-0'
                                   )}
                                 />
-                                {branch}
+                                {branch.name}
                               </CommandItem>
                             ))}
                           </CommandGroup>

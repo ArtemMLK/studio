@@ -16,14 +16,9 @@ export function useBranches() {
     return collection(firestore, BRANCHES_COLLECTION);
   }, [firestore]);
 
-  const { data, isLoading, error } = useCollection<Omit<Branch, 'id'>>(branchesCollection);
+  const { data, isLoading, error } = useCollection<Branch>(branchesCollection);
 
-  const branches: Branch[] = useMemo(() => {
-    if (!data) return [];
-    return data.map((doc) => ({ ...doc } as Branch));
-  }, [data]);
-
-  return { data: branches, loading: isLoading, error };
+  return { data: data, loading: isLoading, error };
 }
 
 export async function addBranch(branch: Omit<Branch, 'id'>) {
