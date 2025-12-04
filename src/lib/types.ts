@@ -1,3 +1,4 @@
+
 export type UserRole = 'Участник' | 'Менеджер' | 'Аналитик' | 'Администратор';
 
 export type User = {
