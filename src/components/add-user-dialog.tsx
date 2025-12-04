@@ -263,6 +263,7 @@ export function AddUserDialog({
                                       ? field.value.filter((r) => r !== currentValue)
                                       : [...field.value, currentValue];
                                     field.onChange(newValue);
+                                    setRolesPopoverOpen(true);
                                   }}
                                 >
                                   <Check
@@ -329,6 +330,7 @@ export function AddUserDialog({
                                       ? field.value.filter((b) => b !== currentValue)
                                       : [...field.value, currentValue];
                                     field.onChange(newValue);
+                                    setBranchesPopoverOpen(true);
                                   }}
                                 >
                                   <Check
