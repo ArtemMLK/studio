@@ -1,6 +1,6 @@
 'use client';
 
-import { Fingerprint } from 'lucide-react';
+import { Handshake } from 'lucide-react';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 
@@ -33,7 +33,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="flex w-full max-w-sm flex-col items-center">
         <div className="mb-8 flex items-center gap-2 text-2xl font-bold text-primary">
-          <Fingerprint className="h-8 w-8 text-accent" />
+          <Handshake className="h-8 w-8 text-accent" />
           <h1>ProcurementFlow</h1>
         </div>
         <Card className="w-full">

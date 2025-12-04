@@ -1,6 +1,6 @@
 'use client';
 
-import { Fingerprint } from 'lucide-react';
+import { Handshake } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -29,7 +29,7 @@ export default function DashboardLayout({
       <Sidebar>
         <SidebarHeader className="p-4">
           <div className="flex items-center gap-2 text-lg font-semibold">
-            <Fingerprint className="h-6 w-6 text-accent" />
+            <Handshake className="h-6 w-6 text-accent" />
             <span className="group-data-[collapsible=icon]:hidden">
               ProcurementFlow
             </span>
