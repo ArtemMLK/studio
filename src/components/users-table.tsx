@@ -30,41 +30,39 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { users as initialUsers } from '@/lib/mock-data';
 import type { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { NewUserCredentialsDialog } from './new-user-credentials-dialog';
+import { addUser, useUsers, updateUser } from '@/firebase/firestore/users';
+import { Skeleton } from './ui/skeleton';
 
 export function UsersTable() {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const { data: users, isLoading } = useUsers();
   const [credentials, setCredentials] = useState<{
     login: string;
     password;
   } | null>(null);
 
-  const handleUserAdded = (newUser: User, generatedPassword) => {
-    setUsers((prevUsers) => [newUser, ...prevUsers]);
+  const handleUserAdded = (newUser: Omit<User, 'id'>, generatedPassword) => {
+    addUser(newUser);
     setCredentials({ login: newUser.login, password: generatedPassword });
   };
 
   const handleResetPassword = (userLogin: string) => {
     const newPassword = Math.random().toString(36).slice(-8);
     setCredentials({ login: userLogin, password: newPassword });
-    // Here you would also update the user's password hash in the database
+    // Note: In a real app, you would securely hash and update the password in Firestore
+    // and likely use Firebase Auth's password reset flow.
   };
 
-  const toggleUserBlacklist = (userId: number) => {
-    setUsers(
-      users.map((u) =>
-        u.id === userId ? { ...u, isBlacklisted: !u.isBlacklisted } : u
-      )
-    );
+  const toggleUserBlacklist = (userId: string, isBlacklisted: boolean) => {
+    updateUser(userId, { blacklisted: !isBlacklisted });
   };
 
   return (
     <>
       <div className="flex items-center justify-end space-x-2 py-4">
-        <AddUserDialog onUserAdded={handleUserAdded} existingUsers={users} />
+        <AddUserDialog onUserAdded={handleUserAdded} />
       </div>
       <Card>
         <CardHeader>
@@ -90,98 +88,117 @@ export function UsersTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="hidden h-9 w-9 sm:flex">
-                        <AvatarImage src={user.avatar} alt="Avatar" />
-                        <AvatarFallback>
-                          {user.surname.charAt(0)}
-                          {user.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="grid gap-0.5">
-                        <p className="font-medium">
-                          {user.surname} {user.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {user.login}
-                        </p>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="flex items-center gap-3">
+                      <Skeleton className="h-9 w-9 rounded-full" />
+                      <div className="grid gap-1">
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-4 w-16" />
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {user.roles.map((role) => (
-                        <Badge
-                          key={role}
-                          variant={'outline'}
-                          className={cn(
-                            role === 'Администратор' && 'border-blue-500/50 text-blue-400',
-                            role === 'Менеджер' && 'border-purple-500/50 text-purple-400',
-                            role === 'Аналитик' && 'border-yellow-500/50 text-yellow-400',
-                            role === 'Участник' && 'border-gray-500/50 text-gray-400'
-                          )}
-                        >
-                          {role}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {user.phone}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {user.branches.join(', ')}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={user.isBlacklisted ? 'destructive' : 'outline'}
-                      className={cn(
-                        !user.isBlacklisted && 'border-green-500/50 text-green-400'
-                      )}
-                    >
-                      {user.isBlacklisted ? 'Заблокирован' : 'Активен'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          aria-haspopup="true"
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Меню</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Действия</DropdownMenuLabel>
-                        <DropdownMenuItem>Редактировать</DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleResetPassword(user.login)}
-                        >
-                          Сбросить пароль
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => toggleUserBlacklist(user.id)}
-                        >
-                          {user.isBlacklisted
-                            ? 'Разблокировать'
-                            : 'Заблокировать'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive">
-                          Удалить
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                users?.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="hidden h-9 w-9 sm:flex">
+                          <AvatarImage src={user.avatar} alt="Avatar" />
+                          <AvatarFallback>
+                            {user.surname.charAt(0)}
+                            {user.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="grid gap-0.5">
+                          <p className="font-medium">
+                            {user.surname} {user.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {user.login}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {user.roles.map((role) => (
+                          <Badge
+                            key={role}
+                            variant={'outline'}
+                            className={cn(
+                              role === 'Администратор' && 'border-blue-500/50 text-blue-400',
+                              role === 'Менеджер' && 'border-purple-500/50 text-purple-400',
+                              role === 'Аналитик' && 'border-yellow-500/50 text-yellow-400',
+                              role === 'Участник' && 'border-gray-500/50 text-gray-400'
+                            )}
+                          >
+                            {role}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {user.phone}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {user.branchIds.join(', ')}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={user.blacklisted ? 'destructive' : 'outline'}
+                        className={cn(
+                          !user.blacklisted && 'border-green-500/50 text-green-400'
+                        )}
+                      >
+                        {user.blacklisted ? 'Заблокирован' : 'Активен'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            aria-haspopup="true"
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Меню</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Действия</DropdownMenuLabel>
+                          <DropdownMenuItem>Редактировать</DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleResetPassword(user.login)}
+                          >
+                            Сбросить пароль
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => toggleUserBlacklist(user.id, user.blacklisted)}
+                          >
+                            {user.blacklisted
+                              ? 'Разблокировать'
+                              : 'Заблокировать'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive focus:text-destructive">
+                            Удалить
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

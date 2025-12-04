@@ -9,8 +9,8 @@ export type User = {
   phone: string;
   telegram?: string;
   roles: UserRole[];
-  branches: string[];
-  isBlacklisted: boolean;
+  branchIds: string[];
+  blacklisted: boolean;
   avatar: string;
 };
 

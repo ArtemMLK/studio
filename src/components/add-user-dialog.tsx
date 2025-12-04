@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -40,24 +40,25 @@ import {
 } from '@/components/ui/popover';
 import { branches as initialBranches, userRoles, type User, type UserRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useUsers } from '@/firebase/firestore/users';
 
 interface AddUserDialogProps {
-  onUserAdded: (newUser: User, generatedPassword: string) => void;
-  existingUsers: User[];
+  onUserAdded: (newUser: Omit<User, 'id'>, generatedPassword: string) => void;
 }
 
 export function AddUserDialog({
   onUserAdded,
-  existingUsers,
 }: AddUserDialogProps) {
   const [open, setOpen] = useState(false);
   const [rolesPopoverOpen, setRolesPopoverOpen] = useState(false);
   const [branchesPopoverOpen, setBranchesPopoverOpen] = useState(false);
 
+  const { data: existingUsers } = useUsers();
+  
   const [branches, setBranches] = useState<string[]>(initialBranches);
   const [newBranch, setNewBranch] = useState('');
 
-  const formSchema = z.object({
+  const formSchema = useMemo(() => z.object({
     name: z.string().min(2, 'Имя должно содержать не менее 2 символов.'),
     surname: z
       .string()
@@ -66,7 +67,7 @@ export function AddUserDialog({
       .string()
       .min(3, 'Логин должен содержать не менее 3 символов.')
       .refine(
-        (value) => !existingUsers.some((user) => user.login === value),
+        (value) => !existingUsers?.some((user) => user.login === value),
         'Этот логин уже используется.'
       ),
     phone: z
@@ -76,7 +77,7 @@ export function AddUserDialog({
         'Неверный формат телефона. Пример: +7 (999) 123-45-67'
       )
       .refine(
-        (value) => !existingUsers.some((user) => user.phone === value),
+        (value) => !existingUsers?.some((user) => user.phone === value),
         'Этот телефон уже используется.'
       ),
     telegram: z
@@ -89,10 +90,10 @@ export function AddUserDialog({
     roles: z
       .array(z.string())
       .min(1, 'Необходимо выбрать хотя бы одну роль.'),
-    branches: z
+    branchIds: z
       .array(z.string())
       .min(1, 'Необходимо выбрать хотя бы один филиал.'),
-  });
+  }), [existingUsers]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -103,7 +104,7 @@ export function AddUserDialog({
       phone: '',
       telegram: '',
       roles: [],
-      branches: [],
+      branchIds: [],
     },
   });
 
@@ -111,20 +112,18 @@ export function AddUserDialog({
     if (newBranch && !branches.includes(newBranch)) {
       const updatedBranches = [...branches, newBranch];
       setBranches(updatedBranches);
-      form.setValue('branches', [...form.getValues('branches'), newBranch], { shouldValidate: true });
+      form.setValue('branchIds', [...form.getValues('branchIds'), newBranch], { shouldValidate: true });
       setNewBranch('');
     }
   }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const newId = Math.max(...existingUsers.map((u) => u.id), 0) + 1;
     const generatedPassword = Math.random().toString(36).slice(-8);
 
-    const newUser: User = {
-      id: newId,
+    const newUser: Omit<User, 'id'> = {
       ...values,
       roles: values.roles as UserRole[],
-      isBlacklisted: false,
+      blacklisted: false,
       avatar: `https://i.pravatar.cc/150?u=${values.login}`,
     };
 
@@ -258,9 +257,9 @@ export function AddUserDialog({
                                 onSelect={() => {
                                   const currentValue = form.getValues('roles');
                                   if (currentValue.includes(role)) {
-                                    form.setValue('roles', currentValue.filter(r => r !== role));
+                                    form.setValue('roles', currentValue.filter(r => r !== role), { shouldValidate: true });
                                   } else {
-                                    form.setValue('roles', [...currentValue, role]);
+                                    form.setValue('roles', [...currentValue, role], { shouldValidate: true });
                                   }
                                 }}
                               >
@@ -286,7 +285,7 @@ export function AddUserDialog({
             />
             <FormField
               control={form.control}
-              name="branches"
+              name="branchIds"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Филиалы</FormLabel>
@@ -341,11 +340,11 @@ export function AddUserDialog({
                                 value={branch}
                                 key={branch}
                                 onSelect={() => {
-                                   const currentValue = form.getValues('branches');
+                                   const currentValue = form.getValues('branchIds');
                                    if (currentValue.includes(branch)) {
-                                     form.setValue('branches', currentValue.filter(b => b !== branch));
+                                     form.setValue('branchIds', currentValue.filter(b => b !== branch), { shouldValidate: true });
                                    } else {
-                                     form.setValue('branches', [...currentValue, branch]);
+                                     form.setValue('branchIds', [...currentValue, branch], { shouldValidate: true });
                                    }
                                 }}
                               >
