@@ -3,6 +3,7 @@
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { AddBranchDialog } from '@/components/add-branch-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,7 +30,7 @@ import {
 } from '@/components/ui/table';
 import { branches as initialBranches } from '@/lib/types';
 
-type Branch = {
+export type Branch = {
   id: number;
   name: string;
   address: string;
@@ -42,6 +43,7 @@ export default function BranchesPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
 
   useEffect(() => {
+    // This effect runs only once on the client after mount
     const branchData: Branch[] = initialBranches.map((branchName, index) => ({
       id: index + 1,
       name: branchName,
@@ -53,6 +55,16 @@ export default function BranchesPage() {
     setBranches(branchData);
   }, []);
 
+  const handleBranchAdded = (newBranchData: Omit<Branch, 'id' | 'userCount' | 'status'>) => {
+    const newBranch: Branch = {
+        ...newBranchData,
+        id: Math.max(...branches.map((b) => b.id), 0) + 1,
+        userCount: 0,
+        status: 'Активен',
+    };
+    setBranches((prev) => [newBranch, ...prev]);
+  };
+
 
   return (
     <>
@@ -62,9 +74,7 @@ export default function BranchesPage() {
           <p className="text-muted-foreground">Управление филиалами и объектами.</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" /> Добавить филиал
-          </Button>
+          <AddBranchDialog onBranchAdded={handleBranchAdded} />
         </div>
       </div>
       <Card className="mt-4">
