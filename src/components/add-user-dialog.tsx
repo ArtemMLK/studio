@@ -258,12 +258,11 @@ export function AddUserDialog({
                                 <CommandItem
                                   value={role}
                                   key={role}
-                                  onSelect={(currentValue) => {
-                                    const newValue = field.value.includes(currentValue)
-                                      ? field.value.filter((r) => r !== currentValue)
-                                      : [...field.value, currentValue];
+                                  onSelect={() => {
+                                    const newValue = field.value.includes(role)
+                                      ? field.value.filter((r) => r !== role)
+                                      : [...field.value, role];
                                     field.onChange(newValue);
-                                    setRolesPopoverOpen(true);
                                   }}
                                 >
                                   <Check
@@ -325,12 +324,11 @@ export function AddUserDialog({
                                 <CommandItem
                                   value={branch}
                                   key={branch}
-                                  onSelect={(currentValue) => {
-                                    const newValue = field.value.includes(currentValue)
-                                      ? field.value.filter((b) => b !== currentValue)
-                                      : [...field.value, currentValue];
+                                  onSelect={() => {
+                                    const newValue = field.value.includes(branch)
+                                      ? field.value.filter((b) => b !== branch)
+                                      : [...field.value, branch];
                                     field.onChange(newValue);
-                                    setBranchesPopoverOpen(true);
                                   }}
                                 >
                                   <Check
