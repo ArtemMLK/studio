@@ -3,7 +3,7 @@ export type UserRole = 'Участник' | 'Менеджер' | 'Аналити
 
 export type User = {
   id: string;
-  login: string;
+  login: string; // This will be the user's email
   name: string;
   surname: string;
   phone: string;
@@ -49,10 +49,11 @@ export type Branch = {
 
 export const userRoles: UserRole[] = ['Администратор', 'Менеджер', 'Аналитик', 'Участник'];
 
-export const branches = [
-  'Центральный офис',
-  'Филиал "Север"',
-  'Филиал "Юг"',
-  'Филиал "Запад"',
-  'Филиал "Восток"',
-];
+// This is now derived from Firestore, so we remove the static array.
+// export const branches = [
+//   'Центральный офис',
+//   'Филиал "Север"',
+//   'Филиал "Юг"',
+//   'Филиал "Запад"',
+//   'Филиал "Восток"',
+// ];

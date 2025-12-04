@@ -1,3 +1,4 @@
+
 /**
  * This ruleset enforces a strict Role-Based and Branch-Based Access Control model
  * for a procurement application. Access to data is primarily determined by a user's
@@ -25,7 +26,7 @@
  * - Default Deny: All operations are denied by default and must be explicitly
  *   allowed by a rule.
  * - User Data Privacy: Users can only manage their own profile and associated
- *   subcollections. Listing all users is explicitly forbidden to protect privacy.
+ *   subcollections. Listing all users is restricted to admins to protect privacy.
  * - Blacklist Enforcement: A `blacklisted` flag on a user's document serves as a
  *   global kill switch, denying them all data access.
  * - Role-Based Branch Access: Access to the entire data tree under
@@ -82,7 +83,7 @@ service cloud.firestore {
      * Checks if the authenticated user has the 'admin' role.
      */
     function isAdmin() {
-      return isSignedIn() && 'roles' in getUserData() && getUserData().roles.hasAny(['admin']);
+      return isSignedIn() && 'roles' in getUserData() && getUserData().roles.hasAny(['admin', 'Администратор']);
     }
 
     /**
@@ -106,14 +107,14 @@ service cloud.firestore {
      * @description Manages user profile data.
      * @path /users/{userId}
      * @allow (create) A new user 'abc' creates their own profile at `/users/abc`.
-     * @deny (list) Any user, including an admin, tries to list all user documents.
+     * @deny (list) Any user, except an admin, tries to list all user documents.
      * @deny (update) User 'xyz' tries to update user 'abc's profile at `/users/abc`.
-     * @principle A user's profile can only be created and managed by the user themselves or by an admin. Listing users is disallowed for security.
+     * @principle A user's profile can only be created and managed by the user themselves or by an admin. Listing users is restricted for security.
      */
     match /users/{userId} {
       allow get: if isVerifiedOwner(userId) || isAdmin();
-      allow list: if false;
-      allow create: if isOwner(userId);
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
       allow update: if (isVerifiedOwner(userId) || isAdmin()) && resource != null;
       allow delete: if (isVerifiedOwner(userId) || isAdmin()) && resource != null;
     }

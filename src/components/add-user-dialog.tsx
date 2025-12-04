@@ -1,8 +1,9 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -38,9 +39,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { branches as initialBranches, userRoles, type User, type UserRole } from '@/lib/types';
+import { userRoles, type User, type UserRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useUsers } from '@/firebase/firestore/users';
+import { useBranches } from '@/firebase/firestore/branches';
 
 interface AddUserDialogProps {
   onUserAdded: (newUser: Omit<User, 'id'>, generatedPassword: string) => void;
@@ -54,21 +56,27 @@ export function AddUserDialog({
   const [branchesPopoverOpen, setBranchesPopoverOpen] = useState(false);
 
   const { data: existingUsers } = useUsers();
+  const { data: branchesData } = useBranches();
+  const [branchNames, setBranchNames] = useState<string[]>([]);
   
-  const [branches, setBranches] = useState<string[]>(initialBranches);
-  const [newBranch, setNewBranch] = useState('');
+  useEffect(() => {
+      if(branchesData) {
+        setBranchNames(branchesData.map(b => b.name));
+      }
+  }, [branchesData])
+
 
   const formSchema = useMemo(() => z.object({
     name: z.string().min(2, 'Имя должно содержать не менее 2 символов.'),
     surname: z
       .string()
       .min(2, 'Фамилия должна содержать не менее 2 символов.'),
-    login: z
+    login: z // This is the email now
       .string()
-      .min(3, 'Логин должен содержать не менее 3 символов.')
+      .email('Некорректный формат email.')
       .refine(
         (value) => !existingUsers?.some((user) => user.login === value),
-        'Этот логин уже используется.'
+        'Этот email уже используется.'
       ),
     phone: z
       .string()
@@ -108,15 +116,6 @@ export function AddUserDialog({
     },
   });
 
-  function handleCreateNewBranch() {
-    if (newBranch && !branches.includes(newBranch)) {
-      const updatedBranches = [...branches, newBranch];
-      setBranches(updatedBranches);
-      form.setValue('branchIds', [...form.getValues('branchIds'), newBranch], { shouldValidate: true });
-      setNewBranch('');
-    }
-  }
-
   function onSubmit(values: z.infer<typeof formSchema>) {
     const generatedPassword = Math.random().toString(36).slice(-8);
 
@@ -144,7 +143,7 @@ export function AddUserDialog({
           <DialogTitle>Новый пользователь</DialogTitle>
           <DialogDescription>
             Заполните данные для создания нового пользователя. Пароль будет
-            сгенерирован автоматически.
+            сгенерирован автоматически. Логин должен быть email.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -183,9 +182,9 @@ export function AddUserDialog({
               name="login"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Логин</FormLabel>
+                  <FormLabel>Логин (Email)</FormLabel>
                   <FormControl>
-                    <Input placeholder="ivanov.i" {...field} />
+                    <Input placeholder="ivan.ivanov@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -315,27 +314,12 @@ export function AddUserDialog({
                     <PopoverContent className="w-[300px] p-0">
                       <Command>
                         <CommandInput 
-                          placeholder="Поиск или создание..."
-                          value={newBranch}
-                          onValueChange={setNewBranch}
+                          placeholder="Поиск филиала..."
                         />
                         <CommandList>
-                           <CommandEmpty>
-                             {newBranch ? (
-                                <div
-                                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    handleCreateNewBranch();
-                                  }}
-                                >
-                                  <PlusCircle className="mr-2 h-4 w-4" />
-                                  Создать филиал "{newBranch}"
-                                </div>
-                              ) : "Филиал не найден."}
-                          </CommandEmpty>
+                           <CommandEmpty>Филиал не найден.</CommandEmpty>
                           <CommandGroup>
-                            {branches.map((branch) => (
+                            {branchNames.map((branch) => (
                               <CommandItem
                                 value={branch}
                                 key={branch}

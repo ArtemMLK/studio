@@ -1,7 +1,13 @@
+
 'use client';
 
 import { MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
 
 import { AddUserDialog } from '@/components/add-user-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -35,6 +41,8 @@ import { cn } from '@/lib/utils';
 import { NewUserCredentialsDialog } from './new-user-credentials-dialog';
 import { addUser, useUsers, updateUser } from '@/firebase/firestore/users';
 import { Skeleton } from './ui/skeleton';
+import { useAuth } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 export function UsersTable() {
   const { data: users, isLoading } = useUsers();
@@ -43,16 +51,48 @@ export function UsersTable() {
     password;
   } | null>(null);
 
-  const handleUserAdded = (newUser: Omit<User, 'id'>, generatedPassword) => {
-    addUser(newUser);
-    setCredentials({ login: newUser.login, password: generatedPassword });
+  const auth = useAuth();
+  const { toast } = useToast();
+
+  const handleUserAdded = async (newUser: Omit<User, 'id'>, generatedPassword) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        newUser.login, // Assuming login is the email
+        generatedPassword
+      );
+      const firebaseUser = userCredential.user;
+
+      // Now add the user data to Firestore with the UID from Auth
+      addUser({ ...newUser }, firebaseUser.uid);
+      
+      setCredentials({ login: newUser.login, password: generatedPassword });
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка создания пользователя',
+        description: error.message,
+      });
+    }
   };
 
-  const handleResetPassword = (userLogin: string) => {
-    const newPassword = Math.random().toString(36).slice(-8);
-    setCredentials({ login: userLogin, password: newPassword });
-    // Note: In a real app, you would securely hash and update the password in Firestore
-    // and likely use Firebase Auth's password reset flow.
+  const handleResetPassword = (email: string) => {
+    sendPasswordResetEmail(auth, email)
+      .then(() => {
+        toast({
+          title: 'Письмо для сброса пароля отправлено',
+          description: `Инструкции были отправлены на ${email}`,
+        });
+      })
+      .catch((error) => {
+        console.error('Error sending password reset email:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Ошибка',
+          description: 'Не удалось отправить письмо для сброса пароля.',
+        });
+      });
   };
 
   const toggleUserBlacklist = (userId: string, isBlacklisted: boolean) => {

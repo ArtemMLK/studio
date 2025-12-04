@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Handshake } from 'lucide-react';
@@ -40,18 +41,18 @@ export default function LoginPage() {
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl">Вход в систему</CardTitle>
             <CardDescription>
-              Введите ваш логин и пароль для доступа
+              Введите ваш логин (email) и пароль для доступа
             </CardDescription>
           </CardHeader>
           <form action={dispatch}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="login">Логин</Label>
+                <Label htmlFor="login">Логин (Email)</Label>
                 <Input
                   id="login"
                   name="login"
-                  type="text"
-                  placeholder="ваш-логин"
+                  type="email"
+                  placeholder="admin@proflow.com"
                   required
                 />
               </div>

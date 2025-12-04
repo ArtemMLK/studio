@@ -1,12 +1,16 @@
+
 'use client';
 import {
   collection,
   doc,
+  setDoc,
 } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '..';
 import { User } from '@/lib/types';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '../non-blocking-updates';
+import { updateDocumentNonBlocking } from '../non-blocking-updates';
 import { USERS_COLLECTION } from '@/lib/constants';
+import { errorEmitter } from '../error-emitter';
+import { FirestorePermissionError } from '../errors';
 
 export function useUsers() {
   const firestore = useFirestore();
@@ -19,16 +23,27 @@ export function useUsers() {
   return useCollection<User>(usersCollection);
 }
 
-export async function addUser(user: Omit<User, 'id'>) {
+// Note: The 'id' is the Firebase Auth UID.
+export function addUser(user: Omit<User, 'id'>, id: string) {
   const firestore = useFirestore();
   if (!firestore) {
     throw new Error('Firestore is not initialized');
   }
-  const usersCollection = collection(firestore, USERS_COLLECTION);
-  addDocumentNonBlocking(usersCollection, user);
+  const userDocRef = doc(firestore, USERS_COLLECTION, id);
+  setDoc(userDocRef, user).catch(error => {
+    errorEmitter.emit(
+      'permission-error',
+      new FirestorePermissionError({
+        path: userDocRef.path,
+        operation: 'create',
+        requestResourceData: user,
+      })
+    );
+  });
 }
 
-export async function updateUser(userId: string, data: Partial<User>) {
+
+export function updateUser(userId: string, data: Partial<User>) {
     const firestore = useFirestore();
     if (!firestore) {
       throw new Error('Firestore is not initialized');
