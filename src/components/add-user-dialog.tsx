@@ -42,7 +42,7 @@ import { branches as initialBranches, userRoles, type User, type UserRole } from
 import { cn } from '@/lib/utils';
 
 interface AddUserDialogProps {
-  onUserAdded: (newUser: User, generatedPassword) => void;
+  onUserAdded: (newUser: User, generatedPassword: string) => void;
   existingUsers: User[];
 }
 
@@ -111,7 +111,7 @@ export function AddUserDialog({
     if (newBranch && !branches.includes(newBranch)) {
       const updatedBranches = [...branches, newBranch];
       setBranches(updatedBranches);
-      form.setValue('branches', [...form.getValues('branches'), newBranch]);
+      form.setValue('branches', [...form.getValues('branches'), newBranch], { shouldValidate: true });
       setNewBranch('');
     }
   }
@@ -323,16 +323,9 @@ export function AddUserDialog({
                            <CommandEmpty>
                              {newBranch ? (
                                 <div
-                                  className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none"
-                                  onClick={() => {
-                                    if (newBranch && !branches.includes(newBranch)) {
-                                      const updatedBranches = [...branches, newBranch];
-                                      setBranches(updatedBranches);
-                                      const currentBranches = form.getValues("branches");
-                                      form.setValue("branches", [...currentBranches, newBranch], { shouldValidate: true });
-                                      setNewBranch("");
-                                    }
-                                  }}
+                                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none"
+                                  onSelect={handleCreateNewBranch}
+                                  onClick={handleCreateNewBranch}
                                 >
                                   <PlusCircle className="mr-2 h-4 w-4" />
                                   Создать филиал "{newBranch}"
