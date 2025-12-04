@@ -5,7 +5,7 @@ import {
   doc,
   setDoc,
 } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase } from '..';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '..';
 import { User } from '@/lib/types';
 import { updateDocumentNonBlocking } from '../non-blocking-updates';
 import { USERS_COLLECTION } from '@/lib/constants';
@@ -14,13 +14,19 @@ import { FirestorePermissionError } from '../errors';
 
 export function useUsers() {
   const firestore = useFirestore();
+  const { user } = useUser(); // Get the authenticated user
   
   const usersCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
+    // Only return the collection if the user is authenticated
+    if (!firestore || !user) return null;
     return collection(firestore, USERS_COLLECTION);
-  }, [firestore]);
+  }, [firestore, user]);
 
-  return useCollection<User>(usersCollection);
+  const { data, isLoading, error } = useCollection<User>(usersCollection);
+
+  // The hook's loading state should reflect the auth state as well.
+  // It's loading if we are waiting for the user OR if we are waiting for firestore data.
+  return { data: data, isLoading: !user || isLoading, error };
 }
 
 // Note: The 'id' is the Firebase Auth UID.
