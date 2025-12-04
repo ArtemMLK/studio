@@ -49,20 +49,14 @@ export default function LotsPage() {
               </div>
             </CardHeader>
             <CardContent className="flex-grow p-4">
-              <Badge
-                variant={
-                  lot.status === 'Активен'
-                    ? 'default'
-                    : lot.status === 'Завершен'
-                      ? 'secondary'
-                      : 'destructive'
-                }
+               <Badge
+                variant="outline"
                 className={cn(
                   'mb-2',
-                  lot.status === 'Активен' && 'bg-green-600/20 text-green-800 border-transparent hover:bg-green-600/30 dark:text-green-300',
-                  lot.status === 'Завершен' && 'bg-gray-600/20 text-gray-800 border-transparent hover:bg-gray-600/30 dark:text-gray-300',
-                  lot.status === 'Приостановлен' && 'bg-yellow-600/20 text-yellow-800 border-transparent hover:bg-yellow-600/30 dark:text-yellow-300',
-                  lot.status === 'Отменен' && 'bg-red-600/20 text-red-800 border-transparent hover:bg-red-600/30 dark:text-red-300'
+                  lot.status === 'Активен' && 'border-green-500/50 text-green-400',
+                  lot.status === 'Завершен' && 'border-gray-500/50 text-gray-400',
+                  lot.status === 'Приостановлен' && 'border-yellow-500/50 text-yellow-400',
+                  lot.status === 'Отменен' && 'border-red-500/50 text-red-400'
                 )}
               >
                 {lot.status}

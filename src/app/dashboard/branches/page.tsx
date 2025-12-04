@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { AddBranchDialog } from '@/components/add-branch-dialog';
@@ -29,6 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { branches as initialBranches } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 export type Branch = {
   id: number;
@@ -43,7 +44,6 @@ export default function BranchesPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
 
   useEffect(() => {
-    // This effect runs only once on the client after mount
     const branchData: Branch[] = initialBranches.map((branchName, index) => ({
       id: index + 1,
       name: branchName,
@@ -107,14 +107,10 @@ export default function BranchesPage() {
                    <TableCell className="hidden md:table-cell">{branch.userCount}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={
-                        branch.status === 'Активен' ? 'default' : 'destructive'
-                      }
-                       className={
-                        branch.status === 'Активен' 
-                        ? 'bg-green-600/20 text-green-800 border-transparent hover:bg-green-600/30 dark:text-green-300'
-                        : ''
-                       }
+                      variant={branch.status === 'Активен' ? 'outline' : 'destructive'}
+                       className={cn(
+                        branch.status === 'Активен' && 'border-green-500/50 text-green-400'
+                       )}
                     >
                       {branch.status}
                     </Badge>

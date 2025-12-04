@@ -116,24 +116,12 @@ export function UsersTable() {
                       {user.roles.map((role) => (
                         <Badge
                           key={role}
-                          variant={
-                            role === 'Администратор'
-                              ? 'default'
-                              : role === 'Менеджер'
-                                ? 'secondary'
-                                : role === 'Аналитик'
-                                  ? 'outline'
-                                  : 'destructive'
-                          }
+                          variant={'outline'}
                           className={cn(
-                            role === 'Администратор' &&
-                              'bg-blue-600/20 text-blue-800 border-transparent hover:bg-blue-600/30 dark:text-blue-300',
-                            role === 'Менеджер' &&
-                              'bg-purple-600/20 text-purple-800 border-transparent hover:bg-purple-600/30 dark:text-purple-300',
-                            role === 'Аналитик' &&
-                              'bg-yellow-600/20 text-yellow-800 border-transparent hover:bg-yellow-600/30 dark:text-yellow-300',
-                            role === 'Участник' &&
-                              'bg-gray-600/20 text-gray-800 border-transparent hover:bg-gray-600/30 dark:text-gray-300'
+                            role === 'Администратор' && 'border-blue-500/50 text-blue-400',
+                            role === 'Менеджер' && 'border-purple-500/50 text-purple-400',
+                            role === 'Аналитик' && 'border-yellow-500/50 text-yellow-400',
+                            role === 'Участник' && 'border-gray-500/50 text-gray-400'
                           )}
                         >
                           {role}
@@ -149,10 +137,9 @@ export function UsersTable() {
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={user.isBlacklisted ? 'destructive' : 'default'}
+                      variant={user.isBlacklisted ? 'destructive' : 'outline'}
                       className={cn(
-                        !user.isBlacklisted &&
-                          'bg-green-600/20 text-green-800 border-transparent hover:bg-green-600/30 dark:text-green-300'
+                        !user.isBlacklisted && 'border-green-500/50 text-green-400'
                       )}
                     >
                       {user.isBlacklisted ? 'Заблокирован' : 'Активен'}
