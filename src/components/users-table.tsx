@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { AddUserDialog } from '@/components/add-user-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -32,8 +33,7 @@ import {
 import { users as initialUsers } from '@/lib/mock-data';
 import type { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { NewUserCredentialsDialog } from '@/components/new-user-credentials-dialog';
+import { NewUserCredentialsDialog } from './new-user-credentials-dialog';
 
 export function UsersTable() {
   const [users, setUsers] = useState<User[]>(initialUsers);
@@ -55,14 +55,17 @@ export function UsersTable() {
   };
 
   const toggleUserBlacklist = (userId: number) => {
-    setUsers(users.map(u => u.id === userId ? {...u, isBlacklisted: !u.isBlacklisted} : u));
+    setUsers(
+      users.map((u) =>
+        u.id === userId ? { ...u, isBlacklisted: !u.isBlacklisted } : u
+      )
+    );
   };
-
 
   return (
     <>
       <div className="flex items-center justify-end space-x-2 py-4">
-          <AddUserDialog onUserAdded={handleUserAdded} existingUsers={users} />
+        <AddUserDialog onUserAdded={handleUserAdded} existingUsers={users} />
       </div>
       <Card>
         <CardHeader>
@@ -171,11 +174,13 @@ export function UsersTable() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Действия</DropdownMenuLabel>
                         <DropdownMenuItem>Редактировать</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleResetPassword(user.login)}>
+                        <DropdownMenuItem
+                          onClick={() => handleResetPassword(user.login)}
+                        >
                           Сбросить пароль
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           className="text-destructive"
                           onClick={() => toggleUserBlacklist(user.id)}
                         >
