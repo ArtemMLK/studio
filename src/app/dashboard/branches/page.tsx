@@ -1,7 +1,7 @@
 'use client';
 
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,17 +38,21 @@ type Branch = {
   status: 'Активен' | 'Неактивен';
 };
 
-const branchData: Branch[] = initialBranches.map((branchName, index) => ({
-  id: index + 1,
-  name: branchName,
-  address: `г. Город, ул. Улица, д. ${index + 1}`,
-  head: ['Иванов И.И.', 'Петров П.П.', 'Сидоров С.С.'][index % 3],
-  userCount: Math.floor(Math.random() * 20) + 1,
-  status: Math.random() > 0.2 ? 'Активен' : 'Неактивен',
-}));
-
 export default function BranchesPage() {
-  const [branches, setBranches] = useState<Branch[]>(branchData);
+  const [branches, setBranches] = useState<Branch[]>([]);
+
+  useEffect(() => {
+    const branchData: Branch[] = initialBranches.map((branchName, index) => ({
+      id: index + 1,
+      name: branchName,
+      address: `г. Город, ул. Улица, д. ${index + 1}`,
+      head: ['Иванов И.И.', 'Петров П.П.', 'Сидоров С.С.'][index % 3],
+      userCount: Math.floor(Math.random() * 20) + 1,
+      status: Math.random() > 0.2 ? 'Активен' : 'Неактивен',
+    }));
+    setBranches(branchData);
+  }, []);
+
 
   return (
     <>
