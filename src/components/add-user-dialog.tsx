@@ -39,7 +39,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from '@/components/ui/command';
 
 interface AddUserDialogProps {
@@ -52,6 +51,9 @@ export function AddUserDialog({
   existingUsers,
 }: AddUserDialogProps) {
   const [open, setOpen] = useState(false);
+  const [rolesPopoverOpen, setRolesPopoverOpen] = useState(false);
+  const [branchesPopoverOpen, setBranchesPopoverOpen] = useState(false);
+
   const [userRoles, setUserRoles] = useState<UserRole[]>(initialUserRoles);
   const [branches, setBranches] = useState<string[]>(initialBranches);
   const [newBranch, setNewBranch] = useState('');
@@ -228,7 +230,7 @@ export function AddUserDialog({
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Роли</FormLabel>
-                    <Popover>
+                    <Popover open={rolesPopoverOpen} onOpenChange={setRolesPopoverOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -289,7 +291,7 @@ export function AddUserDialog({
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Филиалы</FormLabel>
-                    <Popover>
+                    <Popover open={branchesPopoverOpen} onOpenChange={setBranchesPopoverOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
