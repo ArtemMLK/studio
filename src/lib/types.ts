@@ -7,7 +7,7 @@ export type User = {
   name: string;
   surname: string;
   phone: string;
-  telegram: string;
+  telegram?: string;
   roles: UserRole[];
   branches: string[];
   isBlacklisted: boolean;

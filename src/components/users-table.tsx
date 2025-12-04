@@ -43,7 +43,7 @@ export function UsersTable() {
   } | null>(null);
 
   const handleUserAdded = (newUser: User) => {
-    setUsers((prevUsers) => [...prevUsers, newUser]);
+    setUsers((prevUsers) => [newUser, ...prevUsers]);
     const generatedPassword = Math.random().toString(36).slice(-8);
     setCredentials({ login: newUser.login, password: generatedPassword });
   };
@@ -181,14 +181,14 @@ export function UsersTable() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          className="text-destructive"
+                          className="text-destructive focus:text-destructive"
                           onClick={() => toggleUserBlacklist(user.id)}
                         >
                           {user.isBlacklisted
                             ? 'Разблокировать'
                             : 'Заблокировать'}
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuItem className="text-destructive focus:text-destructive">
                           Удалить
                         </DropdownMenuItem>
                       </DropdownMenuContent>

@@ -259,7 +259,7 @@ export function AddUserDialog({
                                   const newValue = currentRoles.includes(role)
                                     ? currentRoles.filter((r) => r !== role)
                                     : [...currentRoles, role];
-                                  form.setValue('roles', newValue);
+                                  form.setValue('roles', newValue, { shouldValidate: true });
                                 }}
                               >
                                 <Check
@@ -312,18 +312,30 @@ export function AddUserDialog({
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-[300px] p-0">
-                      <Command onValueChange={setNewBranch} value={newBranch}>
-                        <CommandInput placeholder="Поиск или создание..." />
+                      <Command>
+                        <CommandInput 
+                          placeholder="Поиск или создание..."
+                          value={newBranch}
+                          onValueChange={setNewBranch}
+                        />
                         <CommandList>
                           <CommandEmpty>
-                            <Button
-                              className="w-full"
-                              variant="outline"
-                              onClick={handleCreateNewBranch}
-                            >
-                              <PlusCircle className="mr-2 h-4 w-4" />
-                              Создать филиал "{newBranch}"
-                            </Button>
+                             {newBranch ? (
+                                <CommandItem
+                                  onSelect={() => {
+                                    if (newBranch && !branches.includes(newBranch)) {
+                                      const updatedBranches = [...branches, newBranch];
+                                      setBranches(updatedBranches);
+                                      const currentBranches = form.getValues("branches");
+                                      form.setValue("branches", [...currentBranches, newBranch], { shouldValidate: true });
+                                      setNewBranch("");
+                                    }
+                                  }}
+                                >
+                                  <PlusCircle className="mr-2 h-4 w-4" />
+                                  Создать филиал "{newBranch}"
+                                </CommandItem>
+                              ) : "Филиал не найден."}
                           </CommandEmpty>
                           <CommandGroup>
                             {branches.map((branch) => (
@@ -337,7 +349,7 @@ export function AddUserDialog({
                                         (b) => b !== branch
                                       )
                                     : [...currentBranches, branch];
-                                  form.setValue('branches', newValue);
+                                  form.setValue('branches', newValue, { shouldValidate: true });
                                 }}
                               >
                                 <Check
