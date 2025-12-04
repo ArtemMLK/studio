@@ -38,11 +38,13 @@ import { cn } from '@/lib/utils';
 import { Textarea } from './ui/textarea';
 
 interface AddLotDialogProps {
-  onLotAdded: (newLot: Omit<Lot, 'id' | 'status' | 'procurementId' | 'imageHint'>) => void;
+  onLotAdded: (newLot: Omit<Lot, 'id' | 'status' | 'imageHint'>) => void;
 }
 
 const formSchema = z.object({
   title: z.string().min(5, 'Название должно содержать не менее 5 символов.'),
+  procurementId: z.string().min(1, 'ID закупки обязателен.'),
+  plan: z.coerce.number().positive('План должен быть положительным числом.'),
   price: z.coerce.number().positive('Цена должна быть положительным числом.'),
   deadline: z.date({
     required_error: 'Необходимо указать крайний срок.',
@@ -58,6 +60,8 @@ export function AddLotDialog({ onLotAdded }: AddLotDialogProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
+      procurementId: '',
+      plan: 1,
       price: 0,
       imageUrl: '',
       currency: '₽',
@@ -81,7 +85,7 @@ export function AddLotDialog({ onLotAdded }: AddLotDialogProps) {
           <PlusCircle className="mr-2 h-4 w-4" /> Добавить лот
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Новый лот</DialogTitle>
           <DialogDescription>
@@ -91,7 +95,7 @@ export function AddLotDialog({ onLotAdded }: AddLotDialogProps) {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 py-4"
+            className="space-y-3"
           >
             <FormField
               control={form.control}
@@ -106,22 +110,50 @@ export function AddLotDialog({ onLotAdded }: AddLotDialogProps) {
                 </FormItem>
               )}
             />
-            <FormField
+             <FormField
               control={form.control}
-              name="price"
+              name="procurementId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Начальная цена</FormLabel>
-                   <div className="relative">
-                     <Input type="number" placeholder="50000" {...field} className="pr-12" />
-                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
-                        {form.watch('currency')}
-                     </div>
-                   </div>
+                  <FormLabel>ID закупки</FormLabel>
+                  <FormControl>
+                    <Input placeholder="ЗАК-2024-001" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="plan"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>План (кол-во)</FormLabel>
+                    <FormControl>
+                       <Input type="number" placeholder="100" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Начальная цена</FormLabel>
+                    <div className="relative">
+                      <Input type="number" placeholder="50000" {...field} className="pr-12" />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
+                          {form.watch('currency')}
+                      </div>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="deadline"
@@ -172,7 +204,7 @@ export function AddLotDialog({ onLotAdded }: AddLotDialogProps) {
                   <FormControl>
                     <Input placeholder="https://images.unsplash.com/..." {...field} />
                   </FormControl>
-                   <FormDescription>
+                  <FormDescription>
                     Вставьте ссылку на изображение для карточки лота.
                   </FormDescription>
                   <FormMessage />

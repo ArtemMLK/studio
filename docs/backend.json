@@ -81,16 +81,16 @@
           "type": "string",
           "description": "Unique identifier for the Lot entity."
         },
-        "procurementProcessId": {
+        "procurementId": {
           "type": "string",
-          "description": "Reference to ProcurementProcess. (Relationship: ProcurementProcess 1:N Lot)"
+          "description": "The ID of the procurement this lot belongs to."
         },
-        "name": {
+        "title": {
           "type": "string",
           "description": "The name of the lot."
         },
         "plan": {
-          "type": "string",
+          "type": "number",
           "description": "The plan for the lot."
         },
         "price": {
@@ -109,8 +109,8 @@
       },
       "required": [
         "id",
-        "procurementProcessId",
-        "name"
+        "procurementId",
+        "title"
       ]
     },
     "Application": {
@@ -361,6 +361,22 @@
         }
       },
       {
+        "path": "/lots/{lotId}",
+        "definition": {
+          "entityName": "Lot",
+          "schema": {
+            "$ref": "#/backend/entities/Lot"
+          },
+          "description": "Stores all lots in the system.",
+          "params": [
+            {
+              "name": "lotId",
+              "description": "The unique identifier of the lot."
+            }
+          ]
+        }
+      },
+      {
         "path": "/branches/{branchId}/procurementProcesses/{procurementProcessId}",
         "definition": {
           "entityName": "ProcurementProcess",
@@ -376,30 +392,6 @@
             {
               "name": "procurementProcessId",
               "description": "The unique identifier of the procurement process."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}",
-        "definition": {
-          "entityName": "Lot",
-          "schema": {
-            "$ref": "#/backend/entities/Lot"
-          },
-          "description": "Stores lots for a specific procurement process within a branch.",
-          "params": [
-            {
-              "name": "branchId",
-              "description": "The unique identifier of the branch."
-            },
-            {
-              "name": "procurementProcessId",
-              "description": "The unique identifier of the procurement process."
-            },
-            {
-              "name": "lotId",
-              "description": "The unique identifier of the lot."
             }
           ]
         }
