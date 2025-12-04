@@ -15,6 +15,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -26,6 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { users } from '@/lib/mock-data';
+import { cn } from '@/lib/utils';
 
 export default function UsersPage() {
   return (
@@ -44,6 +46,10 @@ export default function UsersPage() {
         </div>
       </div>
       <Card>
+        <CardHeader>
+            <CardTitle>Список пользователей</CardTitle>
+            <CardDescription>Все зарегистрированные пользователи системы.</CardDescription>
+        </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -83,7 +89,19 @@ export default function UsersPage() {
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {user.roles.map((role) => (
-                        <Badge key={role} variant="secondary">
+                        <Badge key={role} variant={
+                          role === 'Администратор' ? 'default' :
+                          role === 'Менеджер' ? 'secondary' :
+                          role === 'Аналитик' ? 'outline' :
+                          'destructive'
+                        }
+                        className={cn(
+                            role === 'Администратор' && 'bg-blue-600/20 text-blue-800 border-transparent hover:bg-blue-600/30 dark:text-blue-300',
+                            role === 'Менеджер' && 'bg-purple-600/20 text-purple-800 border-transparent hover:bg-purple-600/30 dark:text-purple-300',
+                            role === 'Аналитик' && 'bg-yellow-600/20 text-yellow-800 border-transparent hover:bg-yellow-600/30 dark:text-yellow-300',
+                            role === 'Участник' && 'bg-gray-600/20 text-gray-800 border-transparent hover:bg-gray-600/30 dark:text-gray-300'
+                        )}
+                        >
                           {role}
                         </Badge>
                       ))}
@@ -96,8 +114,12 @@ export default function UsersPage() {
                     {user.branches.join(', ')}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.isBlacklisted ? 'destructive' : 'default'}>
-                      {user.isBlacklisted ? 'В черном списке' : 'Активен'}
+                    <Badge variant={user.isBlacklisted ? 'destructive' : 'default'}
+                    className={cn(
+                        !user.isBlacklisted && 'bg-green-600/20 text-green-800 border-transparent hover:bg-green-600/30 dark:text-green-300',
+                    )}
+                    >
+                      {user.isBlacklisted ? 'Заблокирован' : 'Активен'}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -115,7 +137,11 @@ export default function UsersPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Действия</DropdownMenuLabel>
                         <DropdownMenuItem>Редактировать</DropdownMenuItem>
-                        <DropdownMenuItem>Сменить пароль</DropdownMenuItem>
+                        <DropdownMenuItem>Сбросить пароль</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive">
+                          {user.isBlacklisted ? 'Разблокировать' : 'Заблокировать'}
+                        </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">
                           Удалить
                         </DropdownMenuItem>

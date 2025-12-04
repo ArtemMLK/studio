@@ -57,7 +57,7 @@ export function SidebarNav() {
         <SidebarMenuItem>
           <SidebarMenuButton
             asChild
-            isActive={pathname === '/dashboard/settings'}
+            isActive={pathname.startsWith('/dashboard/settings')}
             tooltip="Настройки"
           >
             <Link href="#">

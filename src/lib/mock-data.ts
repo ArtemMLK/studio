@@ -1,4 +1,4 @@
-import type { Kpi, Lot, LotStatus, User } from '@/lib/types';
+import type { Kpi, Lot, LotStatus, User, UserRole } from '@/lib/types';
 import {
   Landmark,
   PackageCheck,
@@ -69,6 +69,8 @@ export const lots: Lot[] = PlaceHolderImages.map((img, index) => ({
   imageHint: img.imageHint,
 }));
 
+const userRoles: UserRole[] = ['Администратор', 'Менеджер', 'Аналитик', 'Участник'];
+
 export const users: User[] = [
   {
     id: 1,
@@ -77,7 +79,7 @@ export const users: User[] = [
     surname: 'Иванов',
     phone: '+7 (916) 123-45-67',
     telegram: '@ivanov_ivan',
-    roles: ['Administrator', 'Manager'],
+    roles: ['Администратор', 'Менеджер'],
     branches: ['Центральный офис', 'Филиал "Север"'],
     isBlacklisted: false,
     avatar: 'https://i.pravatar.cc/150?u=ivanov.i',
@@ -89,7 +91,7 @@ export const users: User[] = [
     surname: 'Петрова',
     phone: '+7 (926) 234-56-78',
     telegram: '@petrova_elena',
-    roles: ['Manager'],
+    roles: ['Менеджер'],
     branches: ['Филиал "Юг"'],
     isBlacklisted: false,
     avatar: 'https://i.pravatar.cc/150?u=petrova.e',
@@ -101,7 +103,7 @@ export const users: User[] = [
     surname: 'Сидоров',
     phone: '+7 (903) 345-67-89',
     telegram: '@sidorov_alex',
-    roles: ['Analyst'],
+    roles: ['Аналитик'],
     branches: ['Центральный офис'],
     isBlacklisted: false,
     avatar: 'https://i.pravatar.cc/150?u=sidorov.a',
@@ -113,7 +115,7 @@ export const users: User[] = [
     surname: 'Смирнова',
     phone: '+7 (915) 456-78-90',
     telegram: '@smirnova_olga',
-    roles: ['Participant'],
+    roles: ['Участник'],
     branches: ['Филиал "Запад"'],
     isBlacklisted: false,
     avatar: 'https://i.pravatar.cc/150?u=smirnova.o',
@@ -125,7 +127,7 @@ export const users: User[] = [
     surname: 'Кузнецов',
     phone: '+7 (965) 567-89-01',
     telegram: '@kuznetsov_dmitry',
-    roles: ['Participant'],
+    roles: ['Участник'],
     branches: ['Филиал "Восток"'],
     isBlacklisted: true,
     avatar: 'https://i.pravatar.cc/150?u=kuznetsov.d',
