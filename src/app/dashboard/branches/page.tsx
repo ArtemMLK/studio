@@ -35,12 +35,16 @@ import { Branch } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrentUserData } from '@/hooks/use-current-user-data';
 
 export default function BranchesPage() {
   const { selectedBranchId } = useBranchSelection();
   const { data: branches, loading } = useBranches(false, selectedBranchId);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const { toast } = useToast();
+  const { currentUserData } = useCurrentUserData();
+
+  const canManage = currentUserData?.roles.includes('Администратор');
 
   const handleBranchAdded = (newBranchData: Omit<Branch, 'id' | 'userCount' | 'status'>) => {
     const newBranch: Omit<Branch, 'id'> = {
@@ -65,9 +69,11 @@ export default function BranchesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Филиалы</h1>
           <p className="text-muted-foreground">Управление филиалами и объектами.</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <AddBranchDialog onBranchAdded={handleBranchAdded} />
-        </div>
+        {canManage && (
+          <div className="flex items-center space-x-2">
+            <AddBranchDialog onBranchAdded={handleBranchAdded} />
+          </div>
+        )}
       </div>
       <Card className="mt-4">
         <CardHeader>
@@ -85,9 +91,11 @@ export default function BranchesPage() {
                 <TableHead className="hidden md:table-cell">Руководитель</TableHead>
                 <TableHead className="hidden md:table-cell">Пользователей</TableHead>
                 <TableHead>Статус</TableHead>
-                <TableHead>
-                  <span className="sr-only">Действия</span>
-                </TableHead>
+                {canManage && (
+                  <TableHead>
+                    <span className="sr-only">Действия</span>
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -99,7 +107,7 @@ export default function BranchesPage() {
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-8" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                    {canManage && <TableCell><Skeleton className="h-8 w-8" /></TableCell>}
                   </TableRow>
                 ))
               ) : (
@@ -119,27 +127,29 @@ export default function BranchesPage() {
                         {branch.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            aria-haspopup="true"
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Меню</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Действия</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => setEditingBranch(branch)}>
-                            Редактировать
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>Деактивировать</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    {canManage && (
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              aria-haspopup="true"
+                              size="icon"
+                              variant="ghost"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Меню</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Действия</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => setEditingBranch(branch)}>
+                              Редактировать
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>Деактивировать</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -147,7 +157,7 @@ export default function BranchesPage() {
           </Table>
         </CardContent>
       </Card>
-      {editingBranch && (
+      {editingBranch && canManage && (
         <EditBranchDialog
           branch={editingBranch}
           onBranchUpdated={handleBranchUpdated}

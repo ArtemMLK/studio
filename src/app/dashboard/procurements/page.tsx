@@ -28,11 +28,16 @@ import { AddProcurementDialog } from '@/components/add-procurement-dialog';
 import type { ProcurementProcess } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
+import { useCurrentUserData } from '@/hooks/use-current-user-data';
 
 export default function ProcurementsPage() {
   const { selectedBranchId } = useBranchSelection();
   const { data: procurements, loading } = useProcurementProcesses(selectedBranchId);
   const router = useRouter();
+  const { currentUserData } = useCurrentUserData();
+
+  const canManage = currentUserData?.roles.includes('Администратор') || currentUserData?.roles.includes('Менеджер');
+
 
   const handleProcurementAdded = (
     newProcurementData: Omit<ProcurementProcess, 'id' | 'status' | 'lotCount'>
@@ -59,9 +64,11 @@ export default function ProcurementsPage() {
             Управление процессами закупок.
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <AddProcurementDialog onProcurementAdded={handleProcurementAdded} />
-        </div>
+        {canManage && (
+          <div className="flex items-center space-x-2">
+            <AddProcurementDialog onProcurementAdded={handleProcurementAdded} />
+          </div>
+        )}
       </div>
       <Card className="mt-4">
         <CardHeader>

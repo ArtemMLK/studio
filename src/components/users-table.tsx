@@ -54,10 +54,13 @@ import { useBranches } from '@/firebase/firestore/branches';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrentUserData } from '@/hooks/use-current-user-data';
 
 export function UsersTable() {
   const { data: users, isLoading: usersLoading } = useUsers();
   const { data: branches, loading: branchesLoading } = useBranches(true);
+  const { currentUserData } = useCurrentUserData();
+
   const [credentials, setCredentials] = useState<{
     login: string;
     password;
@@ -68,6 +71,7 @@ export function UsersTable() {
   const { toast } = useToast();
 
   const isLoading = usersLoading || branchesLoading;
+  const canManage = currentUserData?.roles.includes('Администратор');
 
   const branchNameMap = useMemo(() => {
     if (!branches) return new Map();
@@ -157,9 +161,11 @@ export function UsersTable() {
 
   return (
     <>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <AddUserDialog onUserAdded={handleUserAdded} />
-      </div>
+      {canManage && (
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <AddUserDialog onUserAdded={handleUserAdded} />
+        </div>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Список пользователей</CardTitle>
@@ -178,9 +184,11 @@ export function UsersTable() {
                   Филиалы
                 </TableHead>
                 <TableHead>Статус</TableHead>
-                <TableHead>
-                  <span className="sr-only">Действия</span>
-                </TableHead>
+                {canManage && (
+                  <TableHead>
+                    <span className="sr-only">Действия</span>
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -198,7 +206,7 @@ export function UsersTable() {
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                    {canManage && <TableCell><Skeleton className="h-8 w-8" /></TableCell>}
                   </TableRow>
                 ))
               ) : (
@@ -257,44 +265,46 @@ export function UsersTable() {
                         {user.blacklisted ? 'Заблокирован' : 'Активен'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            aria-haspopup="true"
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Меню</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Действия</DropdownMenuLabel>
-                          <DropdownMenuItem>Редактировать</DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleResetPassword(user.login)}
-                          >
-                            Сбросить пароль
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => toggleUserBlacklist(user.id, user.blacklisted)}
-                          >
-                            {user.blacklisted
-                              ? 'Разблокировать'
-                              : 'Заблокировать'}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => confirmDeleteUser(user)}
-                          >
-                            Удалить
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    {canManage && (
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              aria-haspopup="true"
+                              size="icon"
+                              variant="ghost"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Меню</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Действия</DropdownMenuLabel>
+                            <DropdownMenuItem>Редактировать</DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleResetPassword(user.login)}
+                            >
+                              Сбросить пароль
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => toggleUserBlacklist(user.id, user.blacklisted)}
+                            >
+                              {user.blacklisted
+                                ? 'Разблокировать'
+                                : 'Заблокировать'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => confirmDeleteUser(user)}
+                            >
+                              Удалить
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

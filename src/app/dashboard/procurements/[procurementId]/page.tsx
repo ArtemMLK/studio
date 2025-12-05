@@ -24,6 +24,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { AddLotDialog } from '@/components/add-lot-dialog';
+import { useCurrentUserData } from '@/hooks/use-current-user-data';
 
 export default function ProcurementDetailsPage() {
   const params = useParams();
@@ -33,6 +34,10 @@ export default function ProcurementDetailsPage() {
     useProcurementProcess(procurementId);
   const { data: lots, loading: lotsLoading } =
     useLotsByProcurement(procurementId);
+  const { currentUserData } = useCurrentUserData();
+
+  const canManage = currentUserData?.roles.includes('Администратор') || currentUserData?.roles.includes('Менеджер');
+
 
   const handleLotAdded = (newLotData: Omit<Lot, 'id' | 'status'>) => {
     addLot({
@@ -120,17 +125,19 @@ export default function ProcurementDetailsPage() {
             <p className="text-muted-foreground">{procurement.description}</p>
           </div>
         </div>
-        <AddLotDialog
-            procurementId={procurementId}
-            branchId={procurement.branchId}
-            onLotAdded={handleLotAdded}
-            triggerButton={
-              <Button size="sm" className="ml-auto gap-1">
-                <PlusCircle className="h-4 w-4" />
-                Добавить Лот
-              </Button>
-            }
-        />
+        {canManage && (
+          <AddLotDialog
+              procurementId={procurementId}
+              branchId={procurement.branchId}
+              onLotAdded={handleLotAdded}
+              triggerButton={
+                <Button size="sm" className="ml-auto gap-1">
+                  <PlusCircle className="h-4 w-4" />
+                  Добавить Лот
+                </Button>
+              }
+          />
+        )}
       </div>
 
       <div className="mt-6">
@@ -211,11 +218,13 @@ export default function ProcurementDetailsPage() {
                     Начните с добавления первого лота.
                     </p>
                     <div className="mt-4">
-                         <AddLotDialog
-                            procurementId={procurementId}
-                            branchId={procurement.branchId}
-                            onLotAdded={handleLotAdded}
-                         />
+                        {canManage && (
+                          <AddLotDialog
+                              procurementId={procurementId}
+                              branchId={procurement.branchId}
+                              onLotAdded={handleLotAdded}
+                          />
+                        )}
                     </div>
                 </div>
             )}

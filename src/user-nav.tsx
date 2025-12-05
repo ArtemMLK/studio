@@ -19,26 +19,20 @@ import { logout } from '@/app/actions';
 import { useUser } from '@/firebase'; // Using the central user hook
 import { Skeleton } from './components/ui/skeleton';
 import { useUsers } from './firebase/firestore/users';
+import { useCurrentUserData } from './hooks/use-current-user-data';
 
 export function UserNav() {
-  const { user, isUserLoading: isAuthLoading } = useUser();
-  const { data: usersData, isLoading: isUsersLoading } = useUsers();
   const [_, dispatch] = useActionState(logout, undefined);
+  const { currentUserData, isUserLoading } = useCurrentUserData();
 
-  const currentUserData = useMemo(() => {
-    if (!user || !usersData) return null;
-    return usersData.find(u => u.id === user.uid);
-  }, [user, usersData]);
-
-
-  if (isAuthLoading || isUsersLoading) {
+  if (isUserLoading) {
     return (
        <Skeleton className="h-9 w-9 rounded-full" />
     );
   }
 
-  if (!user || !currentUserData) {
-    // This could happen briefly between auth loading and firestore loading
+  if (!currentUserData) {
+    // This could happen briefly between auth loading and firestore loading, or if logged out
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
 
