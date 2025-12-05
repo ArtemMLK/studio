@@ -36,11 +36,23 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { buttonVariants } from '@/components/ui/button';
 
 export default function BranchesPage() {
   const { selectedBranchId } = useBranchSelection();
   const { data: branches, loading } = useBranches(false, selectedBranchId);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const [branchToToggle, setBranchToToggle] = useState<Branch | null>(null);
   const { toast } = useToast();
   const { currentUserData } = useCurrentUserData();
 
@@ -61,6 +73,17 @@ export default function BranchesPage() {
     setEditingBranch(null);
     toast({ title: 'Филиал обновлен', description: `Данные филиала "${updatedData.name}" успешно обновлены.` });
   }
+
+  const handleToggleStatus = () => {
+    if (!branchToToggle) return;
+    const newStatus = branchToToggle.status === 'Активен' ? 'Неактивен' : 'Активен';
+    updateBranch(branchToToggle.id, { status: newStatus });
+    toast({
+      title: 'Статус филиала обновлен',
+      description: `Филиал "${branchToToggle.name}" теперь ${newStatus.toLowerCase()}.`,
+    });
+    setBranchToToggle(null);
+  };
 
   return (
     <>
@@ -145,7 +168,9 @@ export default function BranchesPage() {
                             <DropdownMenuItem onClick={() => setEditingBranch(branch)}>
                               Редактировать
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Деактивировать</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setBranchToToggle(branch)}>
+                              {branch.status === 'Активен' ? 'Деактивировать' : 'Активировать'}
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -164,6 +189,25 @@ export default function BranchesPage() {
           onOpenChange={(isOpen) => !isOpen && setEditingBranch(null)}
         />
       )}
+       <AlertDialog open={!!branchToToggle} onOpenChange={(open) => !open && setBranchToToggle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы собираетесь изменить статус филиала "{branchToToggle?.name}" на "{branchToToggle?.status === 'Активен' ? 'Неактивен' : 'Активен'}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleToggleStatus}
+              className={cn(branchToToggle?.status === 'Активен' && buttonVariants({ variant: 'destructive' }))}
+            >
+              {branchToToggle?.status === 'Активен' ? 'Деактивировать' : 'Активировать'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
