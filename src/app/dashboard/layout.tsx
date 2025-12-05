@@ -9,8 +9,14 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { DashboardHeader } from '@/components/dashboard-header';
 import { BranchSelectionProvider } from '@/hooks/use-branch-selection.tsx';
+import dynamic from 'next/dynamic';
+
+const DashboardHeader = dynamic(
+  () => import('@/components/dashboard-header').then(mod => mod.DashboardHeader),
+  { ssr: false }
+);
+
 
 export default function DashboardLayout({
   children,
