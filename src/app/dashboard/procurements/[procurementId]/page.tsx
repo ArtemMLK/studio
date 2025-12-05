@@ -46,21 +46,50 @@ export default function ProcurementDetailsPage() {
   if (procurementLoading) {
     return (
       <>
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-9 w-9" />
-          <div className="space-y-1">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-5 w-80" />
-          </div>
+        <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+            <Skeleton className="h-9 w-9 rounded-md" />
+            <div className="grid gap-1.5">
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-5 w-80" />
+            </div>
+            </div>
+            <Skeleton className="h-9 w-28" />
         </div>
-        <Skeleton className="mt-4 h-96 w-full" />
+        
+        <Card className="mt-6">
+            <CardHeader>
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-72" />
+            </CardHeader>
+            <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="flex flex-col">
+                    <CardHeader className="p-0">
+                      <Skeleton className="h-48 w-full rounded-t-lg" />
+                    </CardHeader>
+                    <CardContent className="flex-grow p-4">
+                      <Skeleton className="mb-2 h-5 w-20 rounded-full" />
+                      <Skeleton className="mt-2 h-6 w-3/4" />
+                      <Skeleton className="mt-2 h-7 w-1/2" />
+                    </CardContent>
+                    <CardFooter className="flex justify-between p-4 pt-0">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-9 w-24" />
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+        </Card>
       </>
     );
   }
 
   if (!procurement) {
     return (
-      <div className="text-center">
+      <div className="flex h-[80vh] flex-col items-center justify-center text-center">
         <h1 className="text-2xl font-bold">Закупка не найдена</h1>
         <p className="text-muted-foreground">
           Возможно, она была удалена или вы перешли по неверной ссылке.

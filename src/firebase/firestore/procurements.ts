@@ -6,8 +6,9 @@ import {
   where,
   getDocs,
   collectionGroup,
+  getDoc,
 } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '..';
+import { useFirestore, useUser } from '..';
 import { ProcurementProcess, Branch } from '@/lib/types';
 import { addDocumentNonBlocking } from '../non-blocking-updates';
 import {
@@ -80,13 +81,60 @@ export function useProcurementProcesses(branchId?: string | null) {
   return { data: procurements, loading, error };
 }
 
+// Optimized hook to get a single procurement process
 export function useProcurementProcess(procurementId?: string) {
-  // This is a simplified hook. In a real app, you'd need to find which branch this process belongs to.
-  // For now, we assume a more complex query would be needed or the branchId would be available.
-  const { data: allProcs, loading, error } = useProcurementProcesses();
-  const procurement =
-    allProcs.find((p) => p.id === procurementId) || null;
-  return { data: procurement, loading, error };
+    const firestore = useFirestore();
+    const [procurement, setProcurement] = useState<ProcurementProcess | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
+
+    useEffect(() => {
+        if (!firestore || !procurementId) {
+            setLoading(false);
+            return;
+        }
+
+        const findAndFetchProcurement = async () => {
+            setLoading(true);
+            try {
+                // First, query the collection group to find the document by ID.
+                const groupQuery = query(collectionGroup(firestore, PROCUREMENT_PROCESSES_COLLECTION), where('__name__', '==', procurementId));
+                const querySnapshot = await getDocs(groupQuery);
+                
+                if (querySnapshot.empty) {
+                    throw new Error(`Procurement with ID ${procurementId} not found across branches.`);
+                }
+                
+                const procDoc = querySnapshot.docs[0];
+                const procData = procDoc.data() as ProcurementProcess;
+
+                // Now get the branch name
+                let branchName = 'Неизвестно';
+                if (procData.branchId) {
+                    const branchDocRef = doc(firestore, BRANCHES_COLLECTION, procData.branchId);
+                    const branchDoc = await getDoc(branchDocRef);
+                    if (branchDoc.exists()) {
+                        branchName = (branchDoc.data() as Branch).name;
+                    }
+                }
+                
+                setProcurement({
+                    ...procData,
+                    id: procDoc.id,
+                    branchName,
+                });
+            } catch (err: any) {
+                console.error("Error fetching single procurement:", err);
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        findAndFetchProcurement();
+    }, [firestore, procurementId]);
+    
+    return { data: procurement, loading, error };
 }
 
 
