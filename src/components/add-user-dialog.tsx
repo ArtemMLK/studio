@@ -55,7 +55,7 @@ export function AddUserDialog({
   const [branchesPopoverOpen, setBranchesPopoverOpen] = useState(false);
 
   const { data: existingUsers } = useUsers();
-  const { data: branchesData } = useBranches(true); // Fetch all branches
+  const { data: branchesData } = useBranches(true);
   
   const formSchema = useMemo(() => z.object({
     name: z.string().min(2, 'Имя должно содержать не менее 2 символов.'),
@@ -79,9 +79,8 @@ export function AddUserDialog({
         (value) => !value || value.startsWith('@'),
         'Telegram должен начинаться с @'
       ),
-    roles: z
-      .array(z.string().transform(val => val as UserRole))
-      .min(1, 'Необходимо выбрать хотя бы одну роль.'),
+    // Используем z.enum для строгой валидации по списку userRoles
+    roles: z.array(z.enum(userRoles)).min(1, 'Необходимо выбрать хотя бы одну роль.'),
     branchIds: z
       .array(z.string())
       .min(1, 'Необходимо выбрать хотя бы один филиал.'),
@@ -100,6 +99,7 @@ export function AddUserDialog({
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log("SUBMIT values:", values);
     const generatedPassword = Math.random().toString(36).slice(-8);
 
     const newUser: Omit<User, 'id'> = {
@@ -223,11 +223,11 @@ export function AddUserDialog({
                               <CommandItem
                                 value={role}
                                 key={role}
-                                onSelect={(currentValue) => {
+                                onSelect={() => {
                                   const currentRoles = form.getValues('roles') || [];
-                                  const updatedRoles = currentRoles.includes(currentValue as UserRole)
-                                    ? currentRoles.filter(r => r !== currentValue)
-                                    : [...currentRoles, currentValue as UserRole];
+                                  const updatedRoles = currentRoles.includes(role)
+                                    ? currentRoles.filter(r => r !== role)
+                                    : [...currentRoles, role];
                                   form.setValue('roles', updatedRoles, { shouldValidate: true });
                                 }}
                               >
