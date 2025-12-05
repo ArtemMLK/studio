@@ -13,21 +13,14 @@ export default function UsersPage() {
   const { currentUserData, isUserLoading } = useCurrentUserData();
 
   useEffect(() => {
-    console.log("UsersPage auth state:", {
-      isUserLoading,
-      currentUserData,
-      roles: currentUserData?.roles,
-    });
-
     // 1. Ничего не делаем, пока данные пользователя загружаются
     if (isUserLoading) {
       return;
     }
     
+    // 2. Если после загрузки данные отсутствуют или у пользователя нет роли админа,
+    // выполняем перенаправление.
     const isAdmin = currentUserData ? hasAdminRole(currentUserData.roles) : false;
-    console.log("isAdmin check:", isAdmin);
-
-    // 2. Если загрузка завершена, но пользователь не админ, перенаправляем
     if (!isAdmin) {
        console.log("Redirecting: User is not an admin.");
        router.replace('/dashboard');
