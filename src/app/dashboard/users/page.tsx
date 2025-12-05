@@ -13,33 +13,21 @@ export default function UsersPage() {
   const { currentUserData, isUserLoading } = useCurrentUserData();
 
   useEffect(() => {
-    // Не делать ничего, пока идет загрузка
+    // We don't want to do anything until the user's auth state and data are fully resolved.
     if (isUserLoading) {
       return;
     }
 
-    // После завершения загрузки, если данных все еще нет, это может быть ошибкой
-    // или пользователь вышел. В любом случае, у него нет доступа.
-    if (!currentUserData) {
-        console.log('Redirecting because currentUserData is missing after load.', { isUserLoading, currentUserData });
-        router.replace('/dashboard');
-        return;
-    }
-
-    // Теперь, когда мы уверены, что данные есть, проверяем роль
-    const isAdmin = hasAdminRole(currentUserData.roles);
-    if (!isAdmin) {
-      console.log('Redirecting because user is not an admin.', {
-        isUserLoading,
-        isAdmin,
-        roles: currentUserData.roles,
-      });
+    // After loading, if there's no user data at all, or if the user is not an admin, redirect.
+    // This is the final, definitive check.
+    if (!currentUserData || !hasAdminRole(currentUserData.roles)) {
       router.replace('/dashboard');
     }
   }, [isUserLoading, currentUserData, router]);
 
-  // Пока идет загрузка, показываем скелетон.
-  if (isUserLoading) {
+  // While loading, or if the user is not an admin (before the redirect happens), show a skeleton.
+  // This prevents flashing content for non-admins.
+  if (isUserLoading || !currentUserData || !hasAdminRole(currentUserData.roles)) {
     return (
       <>
         <div className="flex items-center justify-between space-y-2">
@@ -56,27 +44,6 @@ export default function UsersPage() {
     );
   }
 
-  // Если загрузка завершена и пользователь - админ, показываем таблицу.
-  // Если не админ, useEffect уже запустил редирект, и здесь будет null
-  // (или пустой div), что предотвратит рендер таблицы для обычного пользователя.
-  if (currentUserData && hasAdminRole(currentUserData.roles)) {
-    return <UsersTable />;
-  }
-
-  // Для не-админов, пока происходит редирект, или если данные не загрузились,
-  // показываем состояние загрузки или ничего не показываем, чтобы избежать "мигания".
-  return (
-    <>
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-4 w-72" />
-        </div>
-        <Skeleton className="h-10 w-44" />
-      </div>
-      <div className="mt-4">
-        <Skeleton className="h-[500px] w-full" />
-      </div>
-    </>
-  );
+  // If loading is complete and the user is an admin, show the full users table.
+  return <UsersTable />;
 }
