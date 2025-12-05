@@ -7,10 +7,14 @@ import {
   getDoc,
   Query,
   onSnapshot,
+  Firestore,
 } from 'firebase/firestore';
 import { useFirestore, useUser } from '..';
 import { Lot, ProcurementProcess, Branch } from '@/lib/types';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '../non-blocking-updates';
+import {
+  addDocumentNonBlocking,
+  updateDocumentNonBlocking,
+} from '../non-blocking-updates';
 import {
   LOTS_COLLECTION,
   PROCUREMENT_PROCESSES_COLLECTION,
@@ -38,24 +42,46 @@ export function useLots(procurementId?: string) {
 
     let q: Query | null = collection(firestore, LOTS_COLLECTION);
     const whereClauses: any[] = [];
+    const userRoles = currentUserData.roles || [];
+    const userBranchIds = currentUserData.branchIds || [];
 
     if (procurementId) {
       whereClauses.push(where('procurementId', '==', procurementId));
     }
 
     if (selectedBranchId && selectedBranchId !== 'all') {
-       whereClauses.push(where('branchId', '==', selectedBranchId));
-    }
-
-    if (whereClauses.length > 0) {
-        q = query(q, ...whereClauses);
+      whereClauses.push(where('branchId', '==', selectedBranchId));
+    } else {
+      // If not an admin and no specific branch is selected, filter by user's branches
+      if (
+        !userRoles.includes('Администратор') &&
+        userBranchIds.length > 0
+      ) {
+        whereClauses.push(where('branchId', 'in', userBranchIds));
+      }
     }
     
+    // If user is a manager or analyst without assigned branches, they see nothing.
+    if (
+        (userRoles.includes('Менеджер') || userRoles.includes('Аналитик')) &&
+        !userRoles.includes('Администратор') &&
+        userBranchIds.length === 0
+    ) {
+        return null;
+    }
+
+
+    if (whereClauses.length > 0) {
+      q = query(q, ...whereClauses);
+    }
+
     console.log('useLots Query:', {
-        path: 'lots',
-        filters: whereClauses.map(w => ({
-            field: w['_f'], op: w['_op'], value: w['_v']
-        }))
+      path: 'lots',
+      filters: whereClauses.map((w) => ({
+        field: w['_f'],
+        op: w['_op'],
+        value: w['_v'],
+      })),
     });
 
     return q;
@@ -98,7 +124,7 @@ export function useLots(procurementId?: string) {
 
     return () => unsubscribe();
   }, [lotsQuery, isCurrentUserDataLoading]);
-  
+
   const combinedLoading = loading || isCurrentUserDataLoading;
 
   return { data: lots, loading: combinedLoading, error };
@@ -194,20 +220,16 @@ export function useLotsByProcurement(procurementId?: string) {
   return useLots(procurementId);
 }
 
-export function addLot(lot: Omit<Lot, 'id'>) {
-  const firestore = useFirestore();
-  if (!firestore) {
-    throw new Error('Firestore is not initialized');
-  }
+export function addLot(firestore: Firestore, lot: Omit<Lot, 'id'>) {
   const lotsCollection = collection(firestore, LOTS_COLLECTION);
   addDocumentNonBlocking(lotsCollection, lot);
 }
 
-export function updateLot(lotId: string, data: Partial<Omit<Lot, 'id'>>) {
-  const firestore = useFirestore();
-  if (!firestore) {
-    throw new Error('Firestore is not initialized');
-  }
+export function updateLot(
+  firestore: Firestore,
+  lotId: string,
+  data: Partial<Omit<Lot, 'id'>>
+) {
   const lotDocRef = doc(firestore, LOTS_COLLECTION, lotId);
   updateDocumentNonBlocking(lotDocRef, data);
 }

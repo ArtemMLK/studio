@@ -47,14 +47,16 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { buttonVariants } from '@/components/ui/button';
+import { useFirestore } from '@/firebase';
 
 export default function BranchesPage() {
   const { selectedBranchId } = useBranchSelection();
-  const { data: branches, loading } = useBranches(false, selectedBranchId);
+  const { data: branches, loading } = useBranches(false);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const [branchToToggle, setBranchToToggle] = useState<Branch | null>(null);
   const { toast } = useToast();
   const { currentUserData } = useCurrentUserData();
+  const firestore = useFirestore();
 
   const canManage = currentUserData?.roles.includes('Администратор');
 
@@ -64,12 +66,12 @@ export default function BranchesPage() {
       userCount: 0,
       status: 'Активен',
     };
-    addBranch(newBranch);
+    addBranch(firestore, newBranch);
     toast({ title: 'Филиал добавлен', description: `Филиал "${newBranch.name}" успешно создан.` });
   };
   
   const handleBranchUpdated = (branchId: string, updatedData: Omit<Branch, 'id' | 'userCount' | 'status'>) => {
-    updateBranch(branchId, updatedData);
+    updateBranch(firestore, branchId, updatedData);
     setEditingBranch(null);
     toast({ title: 'Филиал обновлен', description: `Данные филиала "${updatedData.name}" успешно обновлены.` });
   }
@@ -77,7 +79,7 @@ export default function BranchesPage() {
   const handleToggleStatus = () => {
     if (!branchToToggle) return;
     const newStatus = branchToToggle.status === 'Активен' ? 'Неактивен' : 'Активен';
-    updateBranch(branchToToggle.id, { status: newStatus });
+    updateBranch(firestore, branchToToggle.id, { status: newStatus });
     toast({
       title: 'Статус филиала обновлен',
       description: `Филиал "${branchToToggle.name}" теперь ${newStatus.toLowerCase()}.`,

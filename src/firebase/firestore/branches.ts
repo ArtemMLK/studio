@@ -1,12 +1,22 @@
 'use client';
-import { collection, query, where, Query, onSnapshot } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  Query,
+  onSnapshot,
+  Firestore,
+  doc,
+} from 'firebase/firestore';
 import { useFirestore, useUser } from '..';
 import { Branch } from '@/lib/types';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '../non-blocking-updates';
-import { BRANCHES_COLLECTION, USERS_COLLECTION } from '@/lib/constants';
+import {
+  addDocumentNonBlocking,
+  updateDocumentNonBlocking,
+} from '../non-blocking-updates';
+import { BRANCHES_COLLECTION } from '@/lib/constants';
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
 import { useMemo, useState, useEffect } from 'react';
-import { doc } from 'firebase/firestore';
 
 export function useBranches(all: boolean = false) {
   const firestore = useFirestore();
@@ -26,25 +36,23 @@ export function useBranches(all: boolean = false) {
     const isAdmin = userRoles.includes('Администратор');
 
     let finalQuery: Query | null = null;
+    let filters: any[] = [];
 
     if (isAdmin) {
-      // Администратор может запрашивать все филиалы без ограничений.
       finalQuery = q;
     } else {
-      // Не-администраторы могут запрашивать только те филиалы, ID которых есть в их профиле.
       if (userBranchIds.length > 0) {
-        finalQuery = query(q, where('__name__', 'in', userBranchIds));
+        const nameFilter = where('__name__', 'in', userBranchIds);
+        finalQuery = query(q, nameFilter);
+        filters.push({field: '__name__', op: 'in', value: userBranchIds})
       } else {
-        // Если у пользователя нет филиалов, нет смысла делать запрос.
         finalQuery = null;
       }
     }
 
     console.log('useBranches Query:', {
         path: finalQuery ? 'branches' : 'null',
-        filters: finalQuery && (finalQuery as any)._query.filters.map((f:any) => ({
-            field: f.field.canonicalString(), op: f.op, value: f.value.value
-        })),
+        filters,
         isAdmin,
         userBranchIds
     });
@@ -62,17 +70,20 @@ export function useBranches(all: boolean = false) {
       setLoading(false);
       return;
     }
-    
+
     setLoading(true);
-    const unsubscribe = onSnapshot(branchesQuery, 
+    const unsubscribe = onSnapshot(
+      branchesQuery,
       (snapshot) => {
-        const brs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Branch));
+        const brs = snapshot.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as Branch)
+        );
         setBranches(brs);
         setError(null);
         setLoading(false);
       },
       (err) => {
-        console.error("Error fetching branches:", err);
+        console.error('Error fetching branches:', err);
         setError(err);
         setLoading(false);
       }
@@ -82,25 +93,23 @@ export function useBranches(all: boolean = false) {
   }, [branchesQuery, isUserLoading]);
 
   const combinedLoading = loading || isUserLoading;
-  
+
   return { data: branches, loading: combinedLoading, error };
 }
 
-
-export async function addBranch(branch: Omit<Branch, 'id'>) {
-  const firestore = useFirestore();
-  if (!firestore) {
-    throw new Error('Firestore is not initialized');
-  }
+export async function addBranch(
+  firestore: Firestore,
+  branch: Omit<Branch, 'id'>
+) {
   const branchesCollection = collection(firestore, BRANCHES_COLLECTION);
   await addDocumentNonBlocking(branchesCollection, branch);
 }
 
-export function updateBranch(branchId: string, data: Partial<Omit<Branch, 'id'>>) {
-    const firestore = useFirestore();
-    if (!firestore) {
-      throw new Error('Firestore is not initialized');
-    }
-    const branchDocRef = doc(firestore, BRANCHES_COLLECTION, branchId);
-    updateDocumentNonBlocking(branchDocRef, data);
+export function updateBranch(
+  firestore: Firestore,
+  branchId: string,
+  data: Partial<Omit<Branch, 'id'>>
+) {
+  const branchDocRef = doc(firestore, BRANCHES_COLLECTION, branchId);
+  updateDocumentNonBlocking(branchDocRef, data);
 }

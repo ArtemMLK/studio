@@ -39,10 +39,12 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { ApplicationStatus } from '@/lib/types';
 import { useMemo } from 'react';
+import { useFirestore } from '@/firebase';
 
 export default function ApplicationsPage() {
   const { data: applications, loading: applicationsLoading } = useApplications();
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   // Fetch enrichment data separately
   const { data: users, isLoading: usersLoading } = useUsers();
@@ -71,7 +73,7 @@ export default function ApplicationsPage() {
     applicationId: string,
     newStatus: ApplicationStatus
   ) => {
-    updateApplicationStatus(applicationId, newStatus);
+    updateApplicationStatus(firestore, applicationId, newStatus);
     toast({
       title: 'Статус обновлен',
       description: `Заявка была успешно переведена в статус "${newStatus}".`,

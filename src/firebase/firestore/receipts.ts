@@ -5,6 +5,7 @@ import {
   where,
   Query,
   onSnapshot,
+  Firestore,
 } from 'firebase/firestore';
 import { useFirestore, useUser } from '..';
 import { Receipt } from '@/lib/types';
@@ -20,7 +21,8 @@ import { useCurrentUserData } from '@/hooks/use-current-user-data';
 export function useReceipts() {
   const firestore = useFirestore();
   const { user: authUser } = useUser();
-  const { currentUserData, isUserLoading: isCurrentUserDataLoading } = useCurrentUserData();
+  const { currentUserData, isUserLoading: isCurrentUserDataLoading } =
+    useCurrentUserData();
   const { selectedBranchId } = useBranchSelection();
 
   // Fetch enrichment data safely
@@ -42,9 +44,12 @@ export function useReceipts() {
     // Build query based on user role and branch selection
     if (!userRoles.includes('Администратор')) {
       if (userBranchIds.length === 0) return null; // No access if no branches
-      const accessibleBranches = selectedBranchId && selectedBranchId !== 'all'
-        ? (userBranchIds.includes(selectedBranchId) ? [selectedBranchId] : [])
-        : userBranchIds;
+      const accessibleBranches =
+        selectedBranchId && selectedBranchId !== 'all'
+          ? userBranchIds.includes(selectedBranchId)
+            ? [selectedBranchId]
+            : []
+          : userBranchIds;
 
       if (accessibleBranches.length === 0) return null;
       q = query(q, where('branchId', 'in', accessibleBranches));
@@ -70,9 +75,12 @@ export function useReceipts() {
     }
 
     setLoading(true);
-    const unsubscribe = onSnapshot(receiptsQuery,
+    const unsubscribe = onSnapshot(
+      receiptsQuery,
       (snapshot) => {
-        const rcp = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Receipt));
+        const rcp = snapshot.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as Receipt)
+        );
         setReceipts(rcp);
         setError(null);
         // We set loading false only after enrichment
@@ -90,14 +98,14 @@ export function useReceipts() {
   // Effect for enriching receipts
   useEffect(() => {
     if (lotsLoading || branchesLoading || loading) {
-        // If still fetching main data, don't enrich yet.
-        return;
+      // If still fetching main data, don't enrich yet.
+      return;
     }
 
     if (!receipts || !lots || !branches) {
-        setEnrichedReceipts([]);
-        setLoading(false);
-        return;
+      setEnrichedReceipts([]);
+      setLoading(false);
+      return;
     }
 
     const lotsMap = new Map(lots.map((l) => [l.id, l.title]));
@@ -113,16 +121,13 @@ export function useReceipts() {
     setLoading(false); // Final loading state
   }, [receipts, lots, branches, loading, lotsLoading, branchesLoading]);
 
-  const combinedLoading = loading || isCurrentUserDataLoading || lotsLoading || branchesLoading;
+  const combinedLoading =
+    loading || isCurrentUserDataLoading || lotsLoading || branchesLoading;
 
   return { data: enrichedReceipts, loading: combinedLoading, error };
 }
 
-export function addReceipt(receiptData: Omit<Receipt, 'id'>) {
-  const firestore = useFirestore();
-  if (!firestore) {
-    throw new Error('Firestore is not initialized');
-  }
+export function addReceipt(firestore: Firestore, receiptData: Omit<Receipt, 'id'>) {
   const receiptsCollection = collection(firestore, RECEIPTS_COLLECTION);
   addDocumentNonBlocking(receiptsCollection, receiptData);
 }

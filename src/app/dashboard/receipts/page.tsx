@@ -22,14 +22,16 @@ import { useReceipts, addReceipt } from '@/firebase/firestore/receipts';
 import { AddReceiptDialog } from '@/components/add-receipt-dialog';
 import type { Receipt } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore } from '@/firebase';
 
 
 export default function ReceiptsPage() {
   const { data: receipts, loading } = useReceipts();
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const handleReceiptAdded = (newReceiptData: Omit<Receipt, 'id'>) => {
-    addReceipt(newReceiptData);
+    addReceipt(firestore, newReceiptData);
     toast({
         title: 'Поступление добавлено',
         description: `Новое поступление на сумму ${newReceiptData.amount} ${newReceiptData.currency} зарегистрировано.`

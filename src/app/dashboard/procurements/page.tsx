@@ -29,12 +29,14 @@ import type { ProcurementProcess } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
+import { useFirestore } from '@/firebase';
 
 export default function ProcurementsPage() {
   const { selectedBranchId } = useBranchSelection();
   const { data: procurements, loading } = useProcurementProcesses();
   const router = useRouter();
   const { currentUserData } = useCurrentUserData();
+  const firestore = useFirestore();
 
   const canManage = currentUserData?.roles.includes('Администратор') || currentUserData?.roles.includes('Менеджер');
 
@@ -42,7 +44,7 @@ export default function ProcurementsPage() {
   const handleProcurementAdded = (
     newProcurementData: Omit<ProcurementProcess, 'id' | 'status' | 'lotCount'>
   ) => {
-    addProcurementProcess(newProcurementData.branchId, {
+    addProcurementProcess(firestore, newProcurementData.branchId, {
       ...newProcurementData,
       status: 'Активен',
       lotCount: 0,

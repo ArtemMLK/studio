@@ -27,10 +27,12 @@ import { AddAllocationDialog } from '@/components/add-allocation-dialog';
 import type { Allocation } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useMemo } from 'react';
+import { useFirestore } from '@/firebase';
 
 export default function AllocationsPage() {
   const { data: allocations, loading: allocationsLoading } = useAllocations();
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   // Fetch all necessary data for enrichment
   const { data: applications, loading: applicationsLoading } = useApplications();
@@ -62,7 +64,7 @@ export default function AllocationsPage() {
 
 
   const handleAllocationAdded = (newAllocationData: Omit<Allocation, 'id'>) => {
-    addAllocation(newAllocationData);
+    addAllocation(firestore, newAllocationData);
     toast({
         title: 'Распределение добавлено',
         description: `Новое распределение на сумму ${newAllocationData.amount} создано.`

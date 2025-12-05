@@ -6,8 +6,7 @@ import { ArrowLeft, Box, PlusCircle, MoreHorizontal, Edit } from 'lucide-react';
 import Link from 'next/link';
 
 import { useProcurementProcess } from '@/firebase/firestore/procurements';
-import { useLotsByProcurement } from '@/firebase/firestore/lots';
-import { addLot } from '@/firebase/firestore/lots';
+import { useLotsByProcurement, addLot } from '@/firebase/firestore/lots';
 import type { Lot } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -31,11 +30,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useFirestore } from '@/firebase';
 
 export default function ProcurementDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const procurementId = params.procurementId as string;
+  const firestore = useFirestore();
 
   const { data: procurement, loading: procurementLoading } =
     useProcurementProcess(procurementId);
@@ -56,7 +57,7 @@ export default function ProcurementDetailsPage() {
     ];
     const randomImage = placeholderImages[Math.floor(Math.random() * placeholderImages.length)];
 
-    addLot({
+    addLot(firestore, {
       ...newLotData,
       status: 'Активен',
       imageUrl: newLotData.imageUrl || randomImage,

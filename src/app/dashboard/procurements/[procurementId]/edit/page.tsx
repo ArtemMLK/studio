@@ -31,6 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ProcurementProcess } from '@/lib/types';
+import { useFirestore } from '@/firebase';
 
 
 const formSchema = z.object({
@@ -44,6 +45,7 @@ export default function EditProcurementPage() {
   const procurementId = params.procurementId as string;
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const { data: procurement, loading: procurementLoading } =
     useProcurementProcess(procurementId);
@@ -65,7 +67,7 @@ export default function EditProcurementPage() {
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     if (!procurement) return;
 
-    updateProcurementProcess(procurement.branchId, procurement.id, values);
+    updateProcurementProcess(firestore, procurement.branchId, procurement.id, values);
     toast({
         title: 'Закупка обновлена',
         description: `Данные закупки "${values.name}" успешно обновлены.`

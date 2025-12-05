@@ -16,7 +16,7 @@ import type { Lot } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useLots } from '@/firebase/firestore/lots';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { addApplication } from '@/firebase/firestore/applications';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -25,6 +25,7 @@ export default function LotsPage() {
   const { data: lots, loading } = useLots();
   const { user } = useUser();
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const handleApply = (lot: Lot) => {
     if (!user) {
@@ -36,7 +37,7 @@ export default function LotsPage() {
       return;
     }
 
-    addApplication({
+    addApplication(firestore, {
       lotId: lot.id,
       userId: user.uid,
       branchId: lot.branchId,

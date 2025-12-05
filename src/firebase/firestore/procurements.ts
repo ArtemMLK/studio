@@ -1,4 +1,3 @@
-
 'use client';
 import {
   collection,
@@ -8,10 +7,14 @@ import {
   getDoc,
   onSnapshot,
   Query,
+  Firestore,
 } from 'firebase/firestore';
 import { useFirestore } from '..';
 import { ProcurementProcess, Branch } from '@/lib/types';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '../non-blocking-updates';
+import {
+  addDocumentNonBlocking,
+  updateDocumentNonBlocking,
+} from '../non-blocking-updates';
 import {
   PROCUREMENT_PROCESSES_COLLECTION,
   BRANCHES_COLLECTION,
@@ -19,38 +22,38 @@ import {
 import { useEffect, useState, useMemo } from 'react';
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
 import { useBranches } from './branches';
+import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 
-
-export function useProcurementProcesses(selectedBranchId?: string | null) {
+export function useProcurementProcesses() {
   const firestore = useFirestore();
   const { currentUserData, isUserLoading } = useCurrentUserData();
-  // Используем хук useBranches, который уже учитывает права доступа.
-  // Это гарантирует, что мы получим только те филиалы, которые можем видеть.
-  const { data: accessibleBranches, loading: branchesLoading } = useBranches();
+  const { data: accessibleBranches, loading: branchesLoading } = useBranches(true);
+  const { selectedBranchId } = useBranchSelection();
 
   const [procurements, setProcurements] = useState<ProcurementProcess[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const queries = useMemo(() => {
-    if (!firestore || !currentUserData || !accessibleBranches) return null;
+    if (isUserLoading || branchesLoading || !accessibleBranches || !firestore) {
+      return null;
+    }
 
     let targetBranchIds: string[] = [];
-
-    // Фильтруем доступные филиалы по `selectedBranchId`
     if (selectedBranchId && selectedBranchId !== 'all') {
+      // Ensure the selected branch is one the user can access
       if (accessibleBranches.some(b => b.id === selectedBranchId)) {
         targetBranchIds = [selectedBranchId];
       }
     } else {
+      // If "all" is selected, use all branches the user has access to
       targetBranchIds = accessibleBranches.map(b => b.id);
     }
     
     if (targetBranchIds.length === 0) return [];
 
-    console.log('useProcurementProcesses Queries for branchIds:', targetBranchIds);
+     console.log('useProcurementProcesses Queries for branchIds:', targetBranchIds);
 
-    // Создаем отдельные запросы для каждой подколлекции
     return targetBranchIds.map(branchId =>
       query(
         collection(
@@ -61,52 +64,52 @@ export function useProcurementProcesses(selectedBranchId?: string | null) {
         )
       )
     );
-  }, [firestore, currentUserData, accessibleBranches, selectedBranchId]);
+  }, [firestore, isUserLoading, branchesLoading, accessibleBranches, selectedBranchId]);
 
   useEffect(() => {
-    if (isUserLoading || branchesLoading) {
-      setLoading(true);
-      return;
-    }
     if (queries === null) {
-      // Еще не готовы данные для запроса
       setLoading(true);
       return;
     }
     if (queries.length === 0) {
-      // Пользователю не доступен ни один филиал
       setProcurements([]);
       setLoading(false);
       return;
     }
     
     setLoading(true);
-    
-    // Используем onSnapshot для каждого запроса, чтобы получать обновления в реальном времени
-    const unsubscribers = queries.map((q, index) => {
+    let activeListeners = queries.length;
+    let allProcurements: Record<string, ProcurementProcess> = {};
+
+    const unsubscribers = queries.map((q) => {
+        const branchId = q.parent.parent!.id;
         return onSnapshot(q, (snapshot) => {
-            const branchId = q.parent.parent!.id;
             const branchName = accessibleBranches?.find(b => b.id === branchId)?.name || 'Неизвестно';
 
-            const procsFromThisBranch = snapshot.docs.map(doc => ({
-                ...(doc.data() as ProcurementProcess),
-                id: doc.id,
-                branchName: branchName,
-            }));
-            
-            // Обновляем общий стейт
-            setProcurements(currentProcs => {
-                // Удаляем старые данные по этому филиалу и добавляем новые
-                const otherProcs = currentProcs.filter(p => p.branchId !== branchId);
-                return [...otherProcs, ...procsFromThisBranch];
+            snapshot.docChanges().forEach(change => {
+              if (change.type === "removed") {
+                delete allProcurements[change.doc.id];
+              } else {
+                allProcurements[change.doc.id] = {
+                  ...(change.doc.data() as ProcurementProcess),
+                  id: change.doc.id,
+                  branchName: branchName,
+                };
+              }
             });
+            
+            setProcurements(Object.values(allProcurements));
 
-            // Consider loading finished only when all initial snapshots are received
-            // This logic is simplified; a more robust solution might use Promise.all
-            setLoading(false);
+            // A simple way to manage loading state across multiple listeners
+            if (activeListeners > 0) {
+              activeListeners--;
+              if (activeListeners === 0) {
+                setLoading(false);
+              }
+            }
         }, (err) => {
-            console.error(`Error fetching procurements for branch ${q.parent.parent!.id}:`, err);
-            setError(err); // Устанавливаем ошибку
+            console.error(`Error fetching procurements for branch ${branchId}:`, err);
+            setError(err); 
             setLoading(false);
         });
     });
@@ -115,7 +118,7 @@ export function useProcurementProcesses(selectedBranchId?: string | null) {
       unsubscribers.forEach(unsub => unsub());
     };
 
-  }, [queries, isUserLoading, branchesLoading, accessibleBranches]);
+  }, [queries, accessibleBranches]);
 
   return { data: procurements, loading: loading, error };
 }
@@ -137,9 +140,6 @@ export function useProcurementProcess(procurementId?: string) {
         const findAndFetchProcurement = async () => {
             setLoading(true);
             try {
-                // This is not efficient, but it's the only way with the current structure.
-                // A better DB structure would be to have a top-level `procurements` collection.
-                // We have to query all branches to find which one contains the procurement.
                 const branchesSnapshot = await getDocs(collection(firestore, BRANCHES_COLLECTION));
                 let foundProc: (ProcurementProcess & { branchName: string }) | null = null;
 
@@ -152,7 +152,7 @@ export function useProcurementProcess(procurementId?: string) {
                             id: procDoc.id,
                             branchName: (branchDoc.data() as Branch).name,
                         };
-                        break; // Exit loop once found
+                        break; 
                     }
                 }
                 
@@ -178,13 +178,10 @@ export function useProcurementProcess(procurementId?: string) {
 
 
 export async function addProcurementProcess(
+  firestore: Firestore,
   branchId: string,
   procurement: Omit<ProcurementProcess, 'id'>
 ) {
-  const firestore = useFirestore();
-  if (!firestore) {
-    throw new Error('Firestore is not initialized');
-  }
   const procCollection = collection(
     firestore,
     BRANCHES_COLLECTION,
@@ -196,14 +193,11 @@ export async function addProcurementProcess(
 
 
 export function updateProcurementProcess(
+  firestore: Firestore,
   branchId: string,
   procurementId: string,
   data: Partial<Omit<ProcurementProcess, 'id'>>
 ) {
-  const firestore = useFirestore();
-  if (!firestore) {
-    throw new Error('Firestore is not initialized');
-  }
   const procDocRef = doc(
     firestore,
     BRANCHES_COLLECTION,

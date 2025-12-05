@@ -18,6 +18,7 @@ import {
 import { AddLotDialog } from '@/components/add-lot-dialog';
 import type { Lot } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore } from '@/firebase';
 
 
 export default function EditLotPage() {
@@ -25,11 +26,12 @@ export default function EditLotPage() {
   const router = useRouter();
   const { toast } = useToast();
   const lotId = params.lotId as string;
+  const firestore = useFirestore();
 
   const { data: lot, loading: lotLoading } = useLot(lotId);
 
   const handleLotUpdated = (updatedLotData: Omit<Lot, 'id' | 'status'>) => {
-    updateLot(lotId, updatedLotData);
+    updateLot(firestore, lotId, updatedLotData);
     toast({
         title: 'Лот обновлен',
         description: `Данные лота "${updatedLotData.title}" успешно обновлены.`
