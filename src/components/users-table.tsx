@@ -53,7 +53,7 @@ import { NewUserCredentialsDialog } from './new-user-credentials-dialog';
 import { addUser, useUsers, updateUser, deleteUser } from '@/firebase/firestore/users';
 import { useBranches } from '@/firebase/firestore/branches';
 import { Skeleton } from './ui/skeleton';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
 import { buttonVariants } from './ui/button';
@@ -72,6 +72,7 @@ export function UsersTable() {
 
 
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
 
   const isLoading = usersLoading || branchesLoading;
@@ -91,6 +92,15 @@ export function UsersTable() {
       });
       return;
     }
+    if (!firestore) {
+        toast({
+            variant: 'destructive',
+            title: 'Ошибка',
+            description: 'Сервис базы данных не инициализирован.',
+        });
+        return;
+    }
+
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -100,7 +110,7 @@ export function UsersTable() {
       const firebaseUser = userCredential.user;
 
       // Now add the user data to Firestore with the UID from Auth
-      addUser({ ...newUser }, firebaseUser.uid);
+      addUser(firestore, { ...newUser }, firebaseUser.uid);
       
       setCredentials({ login: newUser.login, password: generatedPassword });
     } catch (error: any) {
@@ -114,7 +124,8 @@ export function UsersTable() {
   };
 
   const handleUserUpdated = (userId: string, updatedData: Partial<User>) => {
-    updateUser(userId, updatedData);
+    if (!firestore) return;
+    updateUser(firestore, userId, updatedData);
     setEditingUser(null);
     toast({ title: 'Пользователь обновлен', description: `Данные пользователя успешно обновлены.` });
   };
@@ -144,11 +155,11 @@ export function UsersTable() {
   };
 
   const handleDeleteUser = async () => {
-    if (!userToDelete) return;
+    if (!userToDelete || !firestore) return;
     try {
       // In a real app, you would also need to delete the user from Firebase Auth.
       // This is a backend operation and requires admin privileges.
-      await deleteUser(userToDelete.id);
+      await deleteUser(firestore, userToDelete.id);
       toast({
         title: 'Пользователь удален',
         description: `Пользователь ${userToDelete.name} ${userToDelete.surname} был удален.`,
@@ -166,7 +177,8 @@ export function UsersTable() {
 
 
   const toggleUserBlacklist = (userId: string, isBlacklisted: boolean) => {
-    updateUser(userId, { blacklisted: !isBlacklisted });
+    if (!firestore) return;
+    updateUser(firestore, userId, { blacklisted: !isBlacklisted });
      toast({
         title: 'Статус пользователя обновлен',
         description: `Пользователь был ${!isBlacklisted ? 'заблокирован' : 'разблокирован'}.`
@@ -175,12 +187,18 @@ export function UsersTable() {
 
   return (
     <>
-      {canManage && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <AddUserDialog onUserAdded={handleUserAdded} />
+       <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Пользователи</h1>
+          <p className="text-muted-foreground">
+            Управление учетными записями и ролями.
+          </p>
         </div>
-      )}
-      <Card>
+        {canManage && (
+            <AddUserDialog onUserAdded={handleUserAdded} />
+        )}
+      </div>
+      <Card className="mt-4">
         <CardHeader>
           <CardTitle>Список пользователей</CardTitle>
           <CardDescription>
@@ -247,7 +265,7 @@ export function UsersTable() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {user.roles.map((role) => (
+                        {Array.isArray(user.roles) ? user.roles.map((role) => (
                           <Badge
                             key={role}
                             variant={'outline'}
@@ -260,7 +278,7 @@ export function UsersTable() {
                           >
                             {role}
                           </Badge>
-                        ))}
+                        )) : <Badge variant="outline">{(user.roles as any)}</Badge>}
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">

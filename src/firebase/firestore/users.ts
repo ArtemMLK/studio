@@ -4,7 +4,8 @@ import {
   collection,
   doc,
   setDoc,
-  deleteDoc
+  deleteDoc,
+  Firestore,
 } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '..';
 import { User } from '@/lib/types';
@@ -13,6 +14,7 @@ import { USERS_COLLECTION } from '@/lib/constants';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
+import { hasAdminRole } from '@/lib/roles';
 
 
 export function useUsers() {
@@ -25,7 +27,7 @@ export function useUsers() {
 
     // The 'list' operation on the users collection is only allowed for admins.
     // To prevent permission errors for other roles, we only return the query if the user is an admin.
-    if (currentUserData.roles.includes('Администратор')) {
+    if (hasAdminRole(currentUserData.roles)) {
       return collection(firestore, USERS_COLLECTION);
     }
     
@@ -37,7 +39,7 @@ export function useUsers() {
   const { data, isLoading, error } = useCollection<User>(usersCollectionQuery);
   
   // If the user is not an admin, we are not fetching data, so we should return an empty array and false for loading.
-  const isAdmin = currentUserData?.roles.includes('Администратор');
+  const isAdmin = currentUserData ? hasAdminRole(currentUserData.roles) : false;
   const finalIsLoading = isAdmin ? (isCurrentUserLoading || isLoading) : false;
   const finalData = isAdmin ? data : [];
 
@@ -45,8 +47,7 @@ export function useUsers() {
 }
 
 // Note: The 'id' is the Firebase Auth UID.
-export function addUser(user: Omit<User, 'id'>, id: string) {
-  const firestore = useFirestore();
+export function addUser(firestore: Firestore, user: Omit<User, 'id'>, id: string) {
   if (!firestore) {
     throw new Error('Firestore is not initialized');
   }
@@ -64,8 +65,7 @@ export function addUser(user: Omit<User, 'id'>, id: string) {
 }
 
 
-export function updateUser(userId: string, data: Partial<User>) {
-    const firestore = useFirestore();
+export function updateUser(firestore: Firestore, userId: string, data: Partial<User>) {
     if (!firestore) {
       throw new Error('Firestore is not initialized');
     }
@@ -75,8 +75,7 @@ export function updateUser(userId: string, data: Partial<User>) {
 
 // This function needs to be improved to handle auth deletion as well.
 // For now, it just deletes the Firestore document.
-export async function deleteUser(userId: string) {
-    const firestore = useFirestore();
+export async function deleteUser(firestore: Firestore, userId: string) {
     if (!firestore) {
         throw new Error('Firestore is not initialized');
     }
