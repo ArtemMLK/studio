@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname } from 'next/navigation';
@@ -35,18 +34,32 @@ const allNavItems = [
   { href: '/dashboard/reports', label: 'Отчеты', icon: LineChart, roles: ['Администратор', 'Аналитик'] as UserRole[] },
 ];
 
-const hasAccess = (userRoles: UserRole[], allowedRoles: UserRole[]) => {
-  if (!userRoles || !Array.isArray(userRoles)) return false;
-  return userRoles.some(role => allowedRoles.includes(role));
-}
+/**
+ * A robust role check that handles roles being a string or an array.
+ * @param userRoles - The roles from the user document (can be string or array).
+ * @param allowedRoles - The roles allowed for a specific navigation item.
+ * @returns boolean - True if the user has access.
+ */
+const hasAccess = (userRoles: UserRole[] | UserRole | undefined, allowedRoles: UserRole[]): boolean => {
+  if (!userRoles) return false;
+
+  // If userRoles is an array, check if any role in the array is in allowedRoles.
+  if (Array.isArray(userRoles)) {
+    return userRoles.some(role => allowedRoles.includes(role));
+  }
+
+  // If userRoles is a single string, check if that string is in allowedRoles.
+  return allowedRoles.includes(userRoles as UserRole);
+};
+
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { currentUserData } = useCurrentUserData();
 
   const navItems = allNavItems.filter(item => {
-    if (!currentUserData || !currentUserData.roles || currentUserData.roles.length === 0) {
-      // Default to most restrictive for loading/logged-out state
+    // During loading or if there are no roles, show a minimal set for participants.
+    if (!currentUserData || !currentUserData.roles) {
       return item.roles.includes('Участник'); 
     }
     return hasAccess(currentUserData.roles, item.roles);

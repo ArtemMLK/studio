@@ -3,6 +3,15 @@ import { UsersTable } from '@/components/users-table';
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
 import { redirect } from 'next/navigation';
 
+const hasAdminRole = (roles: any): boolean => {
+    if (!roles) return false;
+    if (Array.isArray(roles)) {
+        return roles.includes('Администратор');
+    }
+    return roles === 'Администратор';
+}
+
+
 export default function UsersPage() {
   const { currentUserData, isUserLoading } = useCurrentUserData();
 
@@ -12,7 +21,7 @@ export default function UsersPage() {
   }
 
   // If user is not an admin, redirect them away
-  if (!currentUserData?.roles.includes('Администратор')) {
+  if (!hasAdminRole(currentUserData?.roles)) {
     redirect('/dashboard');
   }
 
