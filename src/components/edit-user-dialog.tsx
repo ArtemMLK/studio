@@ -52,12 +52,12 @@ const formSchema = z.object({
   surname: z
     .string()
     .min(2, 'Фамилия должна содержать не менее 2 символов.'),
-  login: z.string().email(), // Read-only, but keep for structure
+  login: z.string(), // Read-only, but keep for structure
   phone: z
     .string()
     .regex(
-      /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/,
-      'Неверный формат телефона. Пример: +7 (999) 123-45-67'
+      /^7\d{10}$/,
+      'Неверный формат телефона. Пример: 79991234567'
     ),
   telegram: z
     .string()
@@ -93,7 +93,7 @@ export function EditUserDialog({
       login: user.login,
       phone: user.phone,
       telegram: user.telegram || '',
-      roles: user.roles,
+      roles: Array.isArray(user.roles) ? user.roles : [user.roles],
       branchIds: user.branchIds,
     },
   });
@@ -105,7 +105,7 @@ export function EditUserDialog({
       login: user.login,
       phone: user.phone,
       telegram: user.telegram || '',
-      roles: user.roles,
+      roles: Array.isArray(user.roles) ? user.roles : [user.roles],
       branchIds: user.branchIds,
     });
   }, [user, form]);
@@ -167,7 +167,7 @@ export function EditUserDialog({
               name="login"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Логин (Email)</FormLabel>
+                  <FormLabel>Логин (Телефон)</FormLabel>
                   <FormControl>
                     <Input readOnly disabled {...field} />
                   </FormControl>
@@ -182,7 +182,7 @@ export function EditUserDialog({
                 <FormItem>
                   <FormLabel>Телефон</FormLabel>
                   <FormControl>
-                    <Input placeholder="+7 (999) 123-45-67" {...field} />
+                    <Input placeholder="79991234567" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

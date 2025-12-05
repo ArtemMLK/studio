@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,11 +48,14 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    if (!email || !password) {
-      setError('Логин и пароль обязательны.');
+    if (!phone || !password) {
+      setError('Телефон и пароль обязательны.');
       setLoading(false);
       return;
     }
+    
+    // Transform phone to email format for Firebase Auth
+    const email = `${phone.replace(/\D/g, '')}@proflow.com`;
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -95,21 +98,21 @@ export default function LoginPage() {
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl">Вход в систему</CardTitle>
             <CardDescription>
-              Введите ваш логин (email) и пароль для доступа
+              Введите ваш номер телефона и пароль для доступа
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleLogin}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="login">Логин (Email)</Label>
+                <Label htmlFor="phone">Логин (Телефон)</Label>
                 <Input
-                  id="login"
-                  name="login"
-                  type="email"
-                  placeholder="admin@proflow.com"
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="79991234567"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   disabled={loading}
                 />
               </div>

@@ -102,9 +102,11 @@ export function UsersTable() {
     }
 
     try {
+      // The login is the phone number, we create a dummy email for Firebase Auth
+      const email = `${newUser.login}@proflow.com`;
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        newUser.login, // Assuming login is the email
+        email,
         generatedPassword
       );
       const firebaseUser = userCredential.user;
@@ -131,13 +133,14 @@ export function UsersTable() {
   };
 
 
-  const handleResetPassword = (email: string) => {
+  const handleResetPassword = (login: string) => {
      if (!auth) return;
+     const email = `${login}@proflow.com`;
     sendPasswordResetEmail(auth, email)
       .then(() => {
         toast({
           title: 'Письмо для сброса пароля отправлено',
-          description: `Инструкции были отправлены на ${email}`,
+          description: `Инструкции были отправлены на email, связанный с логином ${login}`,
         });
       })
       .catch((error) => {
@@ -211,7 +214,7 @@ export function UsersTable() {
               <TableRow>
                 <TableHead>Пользователь</TableHead>
                 <TableHead>Роли</TableHead>
-                <TableHead className="hidden md:table-cell">Телефон</TableHead>
+                <TableHead className="hidden md:table-cell">Логин/Телефон</TableHead>
                 <TableHead className="hidden md:table-cell">
                   Филиалы
                 </TableHead>
@@ -258,7 +261,7 @@ export function UsersTable() {
                             {user.surname} {user.name}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {user.login}
+                            {user.telegram || '-'}
                           </p>
                         </div>
                       </div>
@@ -282,7 +285,7 @@ export function UsersTable() {
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {user.phone}
+                      {user.login}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                        {user.branchIds.map(id => branchNameMap.get(id) || id).join(', ')}

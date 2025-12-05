@@ -259,7 +259,7 @@
         },
         "login": {
           "type": "string",
-          "description": "The user's login username."
+          "description": "The user's login phone number (e.g. 79991234567)."
         },
         "name": {
           "type": "string",

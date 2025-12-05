@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -63,18 +62,11 @@ export function AddUserDialog({
     surname: z
       .string()
       .min(2, 'Фамилия должна содержать не менее 2 символов.'),
-    login: z // This is the email now
-      .string()
-      .email('Некорректный формат email.')
-      .refine(
-        (value) => !existingUsers?.some((user) => user.login === value),
-        'Этот email уже используется.'
-      ),
     phone: z
       .string()
       .regex(
-        /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/,
-        'Неверный формат телефона. Пример: +7 (999) 123-45-67'
+        /^7\d{10}$/,
+        'Неверный формат телефона. Пример: 79991234567'
       )
       .refine(
         (value) => !existingUsers?.some((user) => user.phone === value),
@@ -100,7 +92,6 @@ export function AddUserDialog({
     defaultValues: {
       name: '',
       surname: '',
-      login: '',
       phone: '',
       telegram: '',
       roles: [],
@@ -113,8 +104,9 @@ export function AddUserDialog({
 
     const newUser: Omit<User, 'id'> = {
       ...values,
+      login: values.phone,
       blacklisted: false,
-      avatar: `https://i.pravatar.cc/150?u=${values.login}`,
+      avatar: `https://i.pravatar.cc/150?u=${values.phone}`,
     };
 
     onUserAdded(newUser, generatedPassword);
@@ -134,7 +126,7 @@ export function AddUserDialog({
           <DialogTitle>Новый пользователь</DialogTitle>
           <DialogDescription>
             Заполните данные для создания нового пользователя. Пароль будет
-            сгенерирован автоматически. Логин должен быть email.
+            сгенерирован автоматически. Логином является номер телефона.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -170,25 +162,12 @@ export function AddUserDialog({
             />
             <FormField
               control={form.control}
-              name="login"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Логин (Email)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ivan.ivanov@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="phone"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Телефон</FormLabel>
+                <FormItem className="col-span-2">
+                  <FormLabel>Телефон (Логин)</FormLabel>
                   <FormControl>
-                    <Input placeholder="+7 (999) 123-45-67" {...field} />
+                    <Input placeholder="79991234567" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

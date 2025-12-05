@@ -1,9 +1,9 @@
 
-export type UserRole = 'Участник' | 'Менеджер' | 'Аналитик' | 'Администратор';
+export type UserRole = 'Участник' | 'Менеджер' | 'Аналитик' | 'Администратор' | 'admin';
 
 export type User = {
   id: string;
-  login: string; // This will be the user's email
+  login: string; // This will be the user's phone number
   name: string;
   surname: string;
   phone: string;
