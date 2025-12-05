@@ -47,8 +47,7 @@ interface AddUserDialogProps {
   onUserAdded: (newUser: Omit<User, 'id'>, generatedPassword: string) => void;
 }
 
-// 1. Обновленная Zod-схема
-const formSchema = z.object({
+const formSchemaBase = z.object({
   name: z.string().min(2, 'Имя должно содержать не менее 2 символов.'),
   surname: z
     .string()
@@ -63,17 +62,13 @@ const formSchema = z.object({
       (value) => !value || value.startsWith('@'),
       'Telegram должен начинаться с @'
     ),
-  // Zod теперь явно проверяет, что каждая роль в массиве
-  // является одной из строк в константе userRoles.
   roles: z.array(z.enum(userRoles)).min(1, 'Необходимо выбрать хотя бы одну роль.'),
   branchIds: z.array(z.string()).min(1, 'Необходимо выбрать хотя бы один филиал.'),
 });
 
-// Добавляем проверку на уникальность телефона в схему отдельно,
-// так как она зависит от данных, загруженных хуком.
 const getFinalSchema = (existingUsers: User[] | null) => {
-    return formSchema.extend({
-        phone: formSchema.shape.phone.refine(
+    return formSchemaBase.extend({
+        phone: formSchemaBase.shape.phone.refine(
             (value) => !existingUsers?.some((user) => user.phone === value),
             'Этот телефон уже используется.'
         ),
@@ -121,7 +116,6 @@ export function AddUserDialog({
     form.reset();
   }
 
-  // 2. Переписанные обработчики и JSX
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -142,13 +136,11 @@ export function AddUserDialog({
             onSubmit={form.handleSubmit(onSubmit)}
             className="grid grid-cols-2 gap-4 py-4"
           >
-            {/* Поля name, surname, phone, telegram без изменений */}
             <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Имя</FormLabel><FormControl><Input placeholder="Иван" {...field} /></FormControl><FormMessage /></FormItem> )}/>
             <FormField control={form.control} name="surname" render={({ field }) => ( <FormItem><FormLabel>Фамилия</FormLabel><FormControl><Input placeholder="Иванов" {...field} /></FormControl><FormMessage /></FormItem> )}/>
             <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem className="col-span-2"><FormLabel>Телефон (Логин)</FormLabel><FormControl><Input placeholder="79991234567" {...field} /></FormControl><FormMessage /></FormItem> )}/>
             <FormField control={form.control} name="telegram" render={({ field }) => ( <FormItem className="col-span-2"><FormLabel>Telegram</FormLabel><FormControl><Input placeholder="@ivanov_i" {...field} /></FormControl><FormMessage /></FormItem> )}/>
 
-            {/* Блок для выбора ролей */}
             <FormField
               control={form.control}
               name="roles"
@@ -195,6 +187,10 @@ export function AddUserDialog({
                                   console.log("ROLE SELECT", { clicked: currentValue, before: current, after: updated });
                                   form.setValue('roles', updated, { shouldValidate: true });
                                 }}
+                                className={cn(
+                                  "cursor-pointer",
+                                  field.value?.includes(role) && "bg-muted"
+                                )}
                               >
                                 <Check
                                   className={cn(
@@ -217,7 +213,6 @@ export function AddUserDialog({
               )}
             />
 
-            {/* Блок для выбора филиалов */}
             <FormField
               control={form.control}
               name="branchIds"
@@ -266,6 +261,10 @@ export function AddUserDialog({
                                    console.log("BRANCH SELECT", { clicked: currentValue, before: current, after: updated });
                                    form.setValue('branchIds', updated, { shouldValidate: true });
                                 }}
+                                className={cn(
+                                  "cursor-pointer",
+                                  field.value?.includes(branch.id) && "bg-muted"
+                                )}
                               >
                                 <Check
                                   className={cn(
