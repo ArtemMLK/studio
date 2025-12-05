@@ -12,7 +12,7 @@ import { useProcurementProcesses } from '@/firebase/firestore/procurements';
 import { useLots } from '@/firebase/firestore/lots';
 import { Box, FileClock, ShoppingBasket } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useBranchSelection } from '@/hooks/use-branch-selection';
+import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 
 export default function Dashboard() {
   const { selectedBranchId } = useBranchSelection();

@@ -10,7 +10,7 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserNav } from '@/user-nav';
 import { useBranches } from '@/firebase/firestore/branches';
-import { useBranchSelection } from '@/hooks/use-branch-selection';
+import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 import { useUser } from '@/firebase';
 
 export function DashboardHeader() {

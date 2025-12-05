@@ -27,7 +27,7 @@ import {
 import { AddProcurementDialog } from '@/components/add-procurement-dialog';
 import type { ProcurementProcess } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { useBranchSelection } from '@/hooks/use-branch-selection';
+import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 
 export default function ProcurementsPage() {
   const { selectedBranchId } = useBranchSelection();

@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { DashboardHeader } from '@/components/dashboard-header';
-import { BranchSelectionProvider } from '@/hooks/use-branch-selection';
+import { BranchSelectionProvider } from '@/hooks/use-branch-selection.tsx';
 
 export default function DashboardLayout({
   children,
