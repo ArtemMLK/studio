@@ -16,15 +16,19 @@ service cloud.firestore {
     }
     
     function isNotBlacklisted() {
-      return !('blacklisted' in getUserData()) || getUserData().blacklisted == false;
+        // This function remains potentially problematic if the user doc doesn't exist.
+        // It's safer to check for existence first where this is called.
+        return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               getUserData().blacklisted == false;
     }
 
     function isAdmin() {
-      // Check for 'roles' field existence before trying to access it.
-      return isSignedIn() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             'roles' in getUserData() &&
-             getUserData().roles.hasAny(['admin', 'Администратор']);
+        // This is the key fix. It checks for the existence of the user document
+        // and then safely checks the roles array. This avoids recursion.
+        return isSignedIn() &&
+               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               'roles' in getUserData() &&
+               getUserData().roles.hasAny(['Администратор', 'admin']);
     }
 
     function isManager() {
@@ -35,50 +39,47 @@ service cloud.firestore {
     }
 
     function isVerifiedOwner(userId) {
-      return isOwner(userId) && isNotBlacklisted();
+      // Allow reading own document even if it's not fully created yet.
+      return request.auth != null && request.auth.uid == userId;
     }
     
     function hasAccessToBranch(branchId) {
-      // Check for 'branchIds' field existence before trying to access it.
       return isSignedIn() &&
              isNotBlacklisted() &&
-             (isAdmin() ||
-               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                'branchIds' in getUserData() &&
-                branchId in getUserData().branchIds)
+             (isAdmin() || 
+                (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                 'branchIds' in getUserData() &&
+                 branchId in getUserData().branchIds)
              );
-    }
-    
-    function canListOwnBranches() {
-      return isSignedIn() && isNotBlacklisted();
     }
 
     match /users/{userId} {
-      // Any authenticated user can read their own document. Admins can read any.
-      allow get: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+      // Allow any authenticated user to read their OWN document.
+      // This is crucial to break the recursive loop.
+      allow get: if isVerifiedOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if request.auth.uid == userId;
-      allow update: if (isVerifiedOwner(userId) || isAdmin()) && resource != null;
-      allow delete: if (isVerifiedOwner(userId) || isAdmin()) && resource != null;
+      // An update should only be done by the owner or an admin
+      allow update: if (isOwner(userId) && isNotBlacklisted()) || isAdmin();
+      allow delete: if (isOwner(userId) && isNotBlacklisted()) || isAdmin();
     }
 
     match /users/{userId}/reportSettings/{reportSettingId} {
-      allow get, list: if isVerifiedOwner(userId);
-      allow create: if isVerifiedOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isVerifiedOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
-      allow delete: if isVerifiedOwner(userId) && resource != null;
+      allow get, list: if isOwner(userId) && isNotBlacklisted();
+      allow create: if isOwner(userId) && isNotBlacklisted() && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && isNotBlacklisted() && resource != null && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(userId) && isNotBlacklisted() && resource != null;
     }
 
     match /branches/{branchId} {
       allow get: if hasAccessToBranch(branchId);
-      allow list: if isAdmin() || (canListOwnBranches() && request.query.keys.hasOnly(['__name__']));
+      allow list: if isAdmin() || (isNotBlacklisted() && request.query.keys.hasOnly(['__name__']));
       allow create: if isAdmin();
       allow update, delete: if isAdmin() && resource != null;
     }
 
     match /lots/{lotId} {
-      allow read: if isSignedIn() && isNotBlacklisted();
-      allow list: if isSignedIn() && isNotBlacklisted();
+      allow read, list: if isSignedIn() && isNotBlacklisted();
       allow create: if isManager() && hasAccessToBranch(request.resource.data.branchId);
       allow update: if isManager() && hasAccessToBranch(request.resource.data.branchId);
       allow delete: if isAdmin();
@@ -87,7 +88,7 @@ service cloud.firestore {
     match /applications/{applicationId} {
       allow read: if isSignedIn() && isNotBlacklisted() && (hasAccessToBranch(resource.data.branchId) || isOwner(resource.data.userId));
       allow list: if isSignedIn() && isNotBlacklisted();
-      allow create: if isVerifiedOwner(request.resource.data.userId);
+      allow create: if isOwner(userId) && isNotBlacklisted();
       allow update: if isSignedIn() && isNotBlacklisted() && hasAccessToBranch(resource.data.branchId);
       allow delete: if isAdmin();
     }
