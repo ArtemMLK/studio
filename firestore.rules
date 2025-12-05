@@ -38,11 +38,6 @@ service cloud.firestore {
              getUserData().roles.hasAny(['admin', 'Администратор', 'Менеджер']);
     }
 
-    function isVerifiedOwner(userId) {
-      // Allow reading own document even if it's not fully created yet.
-      return request.auth != null && request.auth.uid == userId;
-    }
-    
     function hasAccessToBranch(branchId) {
       return isSignedIn() &&
              isNotBlacklisted() &&
@@ -56,7 +51,7 @@ service cloud.firestore {
     match /users/{userId} {
       // Allow any authenticated user to read their OWN document.
       // This is crucial to break the recursive loop.
-      allow get: if isVerifiedOwner(userId) || isAdmin();
+      allow get: if (request.auth != null && request.auth.uid == userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if request.auth.uid == userId;
       // An update should only be done by the owner or an admin
