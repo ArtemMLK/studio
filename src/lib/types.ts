@@ -57,6 +57,16 @@ export type Receipt = {
     procurementId: string; // Denormalized
 };
 
+export type Allocation = {
+    id: string;
+    applicationId: string;
+    allocationDate: string;
+    amount: number;
+    branchId: string; // Denormalized
+    procurementId: string; // Denormalized
+    lotId: string; // Denormalized
+};
+
 
 export type Kpi = {
   title: string;
@@ -91,5 +101,3 @@ export type ProcurementProcess = {
 
 
 export const userRoles: UserRole[] = ['Администратор', 'Менеджер', 'Аналитик', 'Участник'];
-
-    

@@ -139,15 +139,19 @@
         "status": {
           "type": "string",
           "description": "The status of the application.",
-          "enum": ["Новая", "Принята", "Отклонена"]
+          "enum": [
+            "Новая",
+            "Принята",
+            "Отклонена"
+          ]
         },
         "branchId": {
           "type": "string",
           "description": "Denormalized reference to Branch for rule filtering."
         },
         "procurementId": {
-            "type": "string",
-            "description": "Denormalized reference to Procurement for rule filtering."
+          "type": "string",
+          "description": "Denormalized reference to Procurement for rule filtering."
         }
       },
       "required": [
@@ -188,8 +192,8 @@
           "description": "Denormalized reference to Branch for rule filtering."
         },
         "procurementId": {
-            "type": "string",
-            "description": "Denormalized reference to Procurement for rule filtering."
+          "type": "string",
+          "description": "Denormalized reference to Procurement for rule filtering."
         }
       },
       "required": [
@@ -221,11 +225,26 @@
         "amount": {
           "type": "number",
           "description": "The amount of the allocation."
+        },
+        "branchId": {
+          "type": "string",
+          "description": "Denormalized reference to Branch for rule filtering."
+        },
+        "procurementId": {
+          "type": "string",
+          "description": "Denormalized reference to Procurement for rule filtering."
+        },
+        "lotId": {
+          "type": "string",
+          "description": "Denormalized reference to Lot for rule filtering."
         }
       },
       "required": [
         "id",
-        "applicationId"
+        "applicationId",
+        "branchId",
+        "procurementId",
+        "lotId"
       ]
     },
     "User": {
@@ -432,6 +451,22 @@
         }
       },
       {
+        "path": "/allocations/{allocationId}",
+        "definition": {
+          "entityName": "Allocation",
+          "schema": {
+            "$ref": "#/backend/entities/Allocation"
+          },
+          "description": "Stores all allocations in the system. Contains denormalized branchId, procurementId, and lotId for filtering.",
+          "params": [
+            {
+              "name": "allocationId",
+              "description": "The unique identifier of the allocation."
+            }
+          ]
+        }
+      },
+      {
         "path": "/branches/{branchId}/procurementProcesses/{procurementProcessId}",
         "definition": {
           "entityName": "ProcurementProcess",
@@ -447,38 +482,6 @@
             {
               "name": "procurementProcessId",
               "description": "The unique identifier of the procurement process."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}/applications/{applicationId}/allocations/{allocationId}",
-        "definition": {
-          "entityName": "Allocation",
-          "schema": {
-            "$ref": "#/backend/entities/Allocation"
-          },
-          "description": "Stores allocations for a specific application within a lot, procurement process, and branch.",
-          "params": [
-            {
-              "name": "branchId",
-              "description": "The unique identifier of the branch."
-            },
-            {
-              "name": "procurementProcessId",
-              "description": "The unique identifier of the procurement process."
-            },
-            {
-              "name": "lotId",
-              "description": "The unique identifier of the lot."
-            },
-            {
-              "name": "applicationId",
-              "description": "The unique identifier of the application."
-            },
-            {
-              "name": "allocationId",
-              "description": "The unique identifier of the allocation."
             }
           ]
         }
@@ -507,5 +510,3 @@
     "reasoning": "The Firestore structure is designed to ensure Authorization Independence, Role-Based Access Control, and efficient data retrieval for the ProcurementFlow application. The design emphasizes denormalization and structural segregation to minimize the need for complex security rules and `get()` calls, adhering to the DBAC principle (Database-Based Access Control) and QAPs (Rules are not Filters).  \n\n**Authorization Independence and Role-Based Access Control:**\n\n*   **Users:** User roles and branch affiliations are stored directly within the `/users/{userId}` document, enabling rules to authorize access based on `request.auth.uid` without needing to `get()` data from other collections.  The `branchIds` field enables filtering data by branch.\n*   **Branches:**  Branches are stored in the `/branches/{branchId}` collection.\n*   **Procurement Processes, Lots, Applications, Receipts, Allocations:**  These entities are nested under the respective branch documents (`/branches/{branchId}/procurementProcesses/{procurementProcessId}`, `/branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}`, `/branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}/applications/{applicationId}`, etc.). This structure facilitates branch-specific data isolation and authorization.  Since data is segregated by branch, branch access control can be implemented at the top level.\n*   **Report Settings:** Report settings are owned by users and stored in the `/users/{userId}/reportSettings/{reportSettingId}` collection.\n\n**Data Filtering and Aggregation (QAPs):**\n\n*   The structure supports efficient filtering by branch, as all relevant data for a branch is located under the `/branches/{branchId}` document. Aggregation can be performed by querying all documents under a branch or across multiple branches (for Admins/Analysts).  Since data is segregated by branch, list operations will naturally be secure.\n\n**Authorization Independence Details:**\n\n*   Access to `ProcurementProcesses`, `Lots`, `Applications`, `Receipts`, and `Allocations` is controlled by the branch to which they belong. The relevant branch ID is present in each of these nested documents, eliminating the need to `get()` the branch document in security rules.  While the data is not duplicated into each document, it is contained by the top level `branchId`, which simplifies the queries and assures that the data is related to the proper branch.  The alternative would be denormalizing the role or branch information into each document.\n\n**Secure Sessions, User Management, and Blacklist Functionality:**\n\n*   These functionalities are handled at the application level using Firebase Authentication and the data stored in the `/users/{userId}` documents. Blacklisted users can be prevented from logging in by checking the `blacklisted` field during authentication."
   }
 }
-
-    

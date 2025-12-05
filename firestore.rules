@@ -72,18 +72,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
+    match /allocations/{allocationId} {
+      allow read, list: if isSignedIn() && isNotBlacklisted() && hasAccessToBranch(resource.data.branchId);
+      allow create, update: if isSignedIn() && isNotBlacklisted() && hasAccessToBranch(request.resource.data.branchId);
+      allow delete: if isAdmin();
+    }
+
     match /branches/{branchId}/procurementProcesses/{procurementProcessId} {
       allow get, list: if hasAccessToBranch(branchId);
       allow create: if hasAccessToBranch(branchId);
       allow update, delete: if hasAccessToBranch(branchId) && resource != null;
-      
-      match /applications/{applicationId}/allocations/{allocationId} {
-        allow get, list: if hasAccessToBranch(branchId);
-        allow create: if hasAccessToBranch(branchId);
-        allow update, delete: if hasAccessToBranch(branchId) && resource != null;
-      }
     }
   }
 }
-
-    
