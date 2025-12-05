@@ -10,7 +10,7 @@ import {
 } from 'firebase/firestore';
 import { useFirestore, useUser } from '..';
 import { ProcurementProcess, Branch } from '@/lib/types';
-import { addDocumentNonBlocking } from '../non-blocking-updates';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '../non-blocking-updates';
 import {
   PROCUREMENT_PROCESSES_COLLECTION,
   BRANCHES_COLLECTION,
@@ -97,32 +97,31 @@ export function useProcurementProcess(procurementId?: string) {
         const findAndFetchProcurement = async () => {
             setLoading(true);
             try {
-                // First, query the collection group to find the document by ID.
-                const groupQuery = query(collectionGroup(firestore, PROCUREMENT_PROCESSES_COLLECTION), where('__name__', '==', procurementId));
-                const querySnapshot = await getDocs(groupQuery);
-                
-                if (querySnapshot.empty) {
-                    throw new Error(`Procurement with ID ${procurementId} not found across branches.`);
-                }
-                
-                const procDoc = querySnapshot.docs[0];
-                const procData = procDoc.data() as ProcurementProcess;
+                // This is not efficient, but it's the only way with the current structure.
+                // A better DB structure would be to have a top-level `procurements` collection.
+                // We have to query all branches to find which one contains the procurement.
+                const branchesSnapshot = await getDocs(collection(firestore, BRANCHES_COLLECTION));
+                let foundProc: (ProcurementProcess & { branchName: string }) | null = null;
 
-                // Now get the branch name
-                let branchName = 'Неизвестно';
-                if (procData.branchId) {
-                    const branchDocRef = doc(firestore, BRANCHES_COLLECTION, procData.branchId);
-                    const branchDoc = await getDoc(branchDocRef);
-                    if (branchDoc.exists()) {
-                        branchName = (branchDoc.data() as Branch).name;
+                for (const branchDoc of branchesSnapshot.docs) {
+                    const procDocRef = doc(firestore, BRANCHES_COLLECTION, branchDoc.id, PROCUREMENT_PROCESSES_COLLECTION, procurementId);
+                    const procDoc = await getDoc(procDocRef);
+                    if (procDoc.exists()) {
+                        foundProc = {
+                            ...(procDoc.data() as ProcurementProcess),
+                            id: procDoc.id,
+                            branchName: (branchDoc.data() as Branch).name,
+                        };
+                        break; // Exit loop once found
                     }
                 }
                 
-                setProcurement({
-                    ...procData,
-                    id: procDoc.id,
-                    branchName,
-                });
+                if (foundProc) {
+                    setProcurement(foundProc);
+                } else {
+                     setError(new Error(`Закупка с ID ${procurementId} не найдена`));
+                }
+
             } catch (err: any) {
                 console.error("Error fetching single procurement:", err);
                 setError(err);
@@ -153,4 +152,24 @@ export async function addProcurementProcess(
     PROCUREMENT_PROCESSES_COLLECTION
   );
   await addDocumentNonBlocking(procCollection, procurement);
+}
+
+
+export function updateProcurementProcess(
+  branchId: string,
+  procurementId: string,
+  data: Partial<Omit<ProcurementProcess, 'id'>>
+) {
+  const firestore = useFirestore();
+  if (!firestore) {
+    throw new Error('Firestore is not initialized');
+  }
+  const procDocRef = doc(
+    firestore,
+    BRANCHES_COLLECTION,
+    branchId,
+    PROCUREMENT_PROCESSES_COLLECTION,
+    procurementId
+  );
+  updateDocumentNonBlocking(procDocRef, data);
 }
