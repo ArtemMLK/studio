@@ -16,15 +16,13 @@ import type { Lot } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useLots } from '@/firebase/firestore/lots';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 import { useUser } from '@/firebase';
 import { addApplication } from '@/firebase/firestore/applications';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
 export default function LotsPage() {
-  const { selectedBranchId } = useBranchSelection();
-  const { data: lots, loading } = useLots(undefined, selectedBranchId);
+  const { data: lots, loading } = useLots();
   const { user } = useUser();
   const { toast } = useToast();
 

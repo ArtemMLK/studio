@@ -15,14 +15,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 
 export default function Dashboard() {
-  const { selectedBranchId } = useBranchSelection();
-
   const { data: procurements, loading: procurementsLoading } =
-    useProcurementProcesses(selectedBranchId);
-  const { data: lots, loading: lotsLoading } = useLots(
-    undefined,
-    selectedBranchId
-  );
+    useProcurementProcesses();
+  const { data: lots, loading: lotsLoading } = useLots();
 
   const activeProcurements =
     procurements?.filter((p) => p.status === 'Активен').length || 0;
