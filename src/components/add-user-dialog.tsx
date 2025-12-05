@@ -230,6 +230,8 @@ export function AddUserDialog({
                                   } else {
                                     form.setValue('roles', [...currentValue, role], { shouldValidate: true });
                                   }
+                                  // This was the missing piece
+                                  setRolesPopoverOpen(false);
                                 }}
                               >
                                 <Check
@@ -300,6 +302,8 @@ export function AddUserDialog({
                                    } else {
                                      form.setValue('branchIds', [...currentValue, branch.id], { shouldValidate: true });
                                    }
+                                   // This was also missing
+                                   setBranchesPopoverOpen(false);
                                 }}
                               >
                                 <Check
