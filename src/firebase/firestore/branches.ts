@@ -1,63 +1,81 @@
 'use client';
-import { collection, query, where } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '..';
-import { Branch, User } from '@/lib/types';
+import { collection, query, where, Query, onSnapshot } from 'firebase/firestore';
+import { useFirestore, useUser } from '..';
+import { Branch } from '@/lib/types';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '../non-blocking-updates';
 import { BRANCHES_COLLECTION, USERS_COLLECTION } from '@/lib/constants';
-import { useDoc } from '../firestore/use-doc.tsx';
-import { doc } from 'firebase/firestore';
+import { useCurrentUserData } from '@/hooks/use-current-user-data';
+import { useMemo, useState, useEffect } from 'react';
 
-export function useBranches(all: boolean = false, branchId?: string) {
+export function useBranches(all: boolean = false) {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user: authUser } = useUser();
+  const { currentUserData, isUserLoading } = useCurrentUserData();
 
-  // Get current user's data to check for roles and branchIds
-  const userDocRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, USERS_COLLECTION, user.uid);
-  }, [firestore, user]);
-  const { data: currentUserData } = useDoc<User>(userDocRef);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  const branchesQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !currentUserData) return null;
+  const branchesQuery = useMemo(() => {
+    if (!firestore || !authUser || !currentUserData) return null;
 
-    let q = collection(firestore, BRANCHES_COLLECTION);
+    let q: Query | null = collection(firestore, BRANCHES_COLLECTION);
+    const userRoles = currentUserData.roles || [];
+    const userBranchIds = currentUserData.branchIds || [];
 
-    // If 'all' is explicitly requested by an admin, return all branches
-    if (all && currentUserData.roles.includes('Администратор')) {
+    // If 'all' is requested, only admin can get it.
+    if (all) {
+      if (userRoles.includes('Администратор')) {
+        return q;
+      }
+      // Non-admin requesting 'all' gets only their own branches.
+      if (userBranchIds.length === 0) return null;
+      return query(q, where('__name__', 'in', userBranchIds));
+    }
+
+    // Default behavior: Admin gets all, others get their assigned branches.
+    if (userRoles.includes('Администратор')) {
       return q;
+    } else {
+      if (userBranchIds.length === 0) return null; // Non-admin with no branches gets nothing.
+      return query(q, where('__name__', 'in', userBranchIds));
     }
+  }, [firestore, authUser, currentUserData, all]);
 
-    // For a specific branchId, just query for that one if user has access
-    if (branchId && branchId !== 'all') {
-         if (currentUserData.roles.includes('Администратор') || currentUserData.branchIds.includes(branchId)) {
-            return query(q, where('__name__', '==', branchId));
-         }
-         return null; // User doesn't have access to this specific branch
+  useEffect(() => {
+    if (isUserLoading) {
+      setLoading(true);
+      return;
     }
-
-    // If user is not admin, filter by their assigned branchIds
-    if (!currentUserData.roles.includes('Администратор') && currentUserData.branchIds.length > 0) {
-        return query(q, where('__name__', 'in', currentUserData.branchIds));
+    if (!branchesQuery) {
+      setBranches([]);
+      setLoading(false);
+      return;
     }
     
-    // Admin sees all branches by default, non-admin with no branches sees none.
-    if (currentUserData.roles.includes('Администратор')) {
-        return q;
-    }
+    setLoading(true);
+    const unsubscribe = onSnapshot(branchesQuery, 
+      (snapshot) => {
+        const brs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Branch));
+        setBranches(brs);
+        setError(null);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Error fetching branches:", err);
+        setError(err);
+        setLoading(false);
+      }
+    );
 
-    // Return a query that yields no results if a non-admin has no branches.
-    return query(q, where('__name__', 'in', ['non-existent-id']));
+    return () => unsubscribe();
+  }, [branchesQuery, isUserLoading]);
 
-  }, [firestore, user, currentUserData, all, branchId]);
-
-  const { data, isLoading, error } = useCollection<Branch>(branchesQuery);
-
-  // The loading state depends on auth, user data, and the collection query itself
-  const derivedLoading = !user || !currentUserData || isLoading;
-
-  return { data: data || [], loading: derivedLoading, error };
+  const combinedLoading = loading || isUserLoading;
+  
+  return { data: branches, loading: combinedLoading, error };
 }
+
 
 export async function addBranch(branch: Omit<Branch, 'id'>) {
   const firestore = useFirestore();
@@ -67,7 +85,6 @@ export async function addBranch(branch: Omit<Branch, 'id'>) {
   const branchesCollection = collection(firestore, BRANCHES_COLLECTION);
   await addDocumentNonBlocking(branchesCollection, branch);
 }
-
 
 export function updateBranch(branchId: string, data: Partial<Omit<Branch, 'id'>>) {
     const firestore = useFirestore();
