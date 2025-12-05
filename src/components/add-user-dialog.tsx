@@ -223,11 +223,11 @@ export function AddUserDialog({
                               <CommandItem
                                 value={role}
                                 key={role}
-                                onSelect={() => {
+                                onSelect={(currentValue) => {
                                   const currentRoles = form.getValues('roles') || [];
-                                  const updatedRoles = currentRoles.includes(role)
-                                    ? currentRoles.filter(r => r !== role)
-                                    : [...currentRoles, role];
+                                  const updatedRoles = currentRoles.includes(currentValue as UserRole)
+                                    ? currentRoles.filter(r => r !== currentValue)
+                                    : [...currentRoles, currentValue as UserRole];
                                   form.setValue('roles', updatedRoles, { shouldValidate: true });
                                 }}
                               >
@@ -267,7 +267,7 @@ export function AddUserDialog({
                           variant="outline"
                           role="combobox"
                           className={cn(
-                            'justify-between',
+                            'justify-between overflow-hidden',
                             !field.value?.length && 'text-muted-foreground'
                           )}
                         >
@@ -290,13 +290,13 @@ export function AddUserDialog({
                           <CommandGroup>
                             {branchesData?.map((branch) => (
                               <CommandItem
-                                value={branch.name}
+                                value={branch.id}
                                 key={branch.id}
-                                onSelect={() => {
+                                onSelect={(currentValue) => {
                                    const currentBranches = form.getValues('branchIds') || [];
-                                   const updatedBranches = currentBranches.includes(branch.id)
-                                    ? currentBranches.filter(id => id !== branch.id)
-                                    : [...currentBranches, branch.id];
+                                   const updatedBranches = currentBranches.includes(currentValue)
+                                    ? currentBranches.filter(id => id !== currentValue)
+                                    : [...currentBranches, currentValue];
                                    form.setValue('branchIds', updatedBranches, { shouldValidate: true });
                                 }}
                               >
