@@ -185,11 +185,14 @@ export function AddUserDialog({
                                     const updated = current.includes(currentValue as UserRole)
                                       ? current.filter(r => r !== currentValue)
                                       : [...current, currentValue as UserRole];
-
+                                    
                                     console.log("ROLE SELECT", { clicked: currentValue, before: current, after: updated });
-                                    field.onChange(updated);
+                                    field.onChange(updated); // ИСПОЛЬЗУЕМ field.onChange
                                   }}
-                                  className={cn("cursor-pointer", field.value?.includes(role) && "bg-muted")}
+                                  className={cn(
+                                    "cursor-pointer",
+                                    field.value?.includes(role) && "bg-muted"
+                                  )}
                                 >
                                   <Check
                                     className={cn(
@@ -261,9 +264,12 @@ export function AddUserDialog({
                                       : [...current, currentValue];
                                     
                                      console.log("BRANCH SELECT", { clicked: currentValue, before: current, after: updated });
-                                     field.onChange(updated);
+                                     field.onChange(updated); // ИСПОЛЬЗУЕМ field.onChange
                                   }}
-                                  className={cn("cursor-pointer", field.value?.includes(branch.id) && "bg-muted")}
+                                  className={cn(
+                                    "cursor-pointer",
+                                    field.value?.includes(branch.id) && "bg-muted"
+                                  )}
                                 >
                                   <Check
                                     className={cn(
