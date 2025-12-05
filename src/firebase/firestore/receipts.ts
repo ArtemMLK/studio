@@ -89,5 +89,3 @@ export function addReceipt(receiptData: Omit<Receipt, 'id'>) {
     const receiptsCollection = collection(firestore, RECEIPTS_COLLECTION);
     addDocumentNonBlocking(receiptsCollection, receiptData);
 }
-
-    

@@ -16,12 +16,25 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Receipt, PlusCircle, MoreHorizontal } from 'lucide-react';
+import { Receipt as ReceiptIcon, MoreHorizontal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useReceipts } from '@/firebase/firestore/receipts';
+import { useReceipts, addReceipt } from '@/firebase/firestore/receipts';
+import { AddReceiptDialog } from '@/components/add-receipt-dialog';
+import type { Receipt } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function ReceiptsPage() {
   const { data: receipts, loading } = useReceipts();
+  const { toast } = useToast();
+
+  const handleReceiptAdded = (newReceiptData: Omit<Receipt, 'id'>) => {
+    addReceipt(newReceiptData);
+    toast({
+        title: 'Поступление добавлено',
+        description: `Новое поступление на сумму ${newReceiptData.amount} ${newReceiptData.currency} зарегистрировано.`
+    });
+  };
 
   return (
     <>
@@ -32,10 +45,7 @@ export default function ReceiptsPage() {
             Просмотр и учет поступлений по лотам.
           </p>
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Добавить поступление
-        </Button>
+        <AddReceiptDialog onReceiptAdded={handleReceiptAdded} />
       </div>
       <Card className="mt-4">
         <CardHeader>
@@ -99,7 +109,7 @@ export default function ReceiptsPage() {
                     <TableCell>
                       {new Intl.NumberFormat('ru-RU', {
                         style: 'currency',
-                        currency: 'RUB',
+                        currency: receipt.currency || 'RUB',
                       }).format(receipt.amount)}
                     </TableCell>
                     <TableCell>
@@ -119,7 +129,7 @@ export default function ReceiptsPage() {
             </Table>
           ) : (
             <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-              <Receipt className="w-12 h-12 text-muted-foreground mb-4" />
+              <ReceiptIcon className="w-12 h-12 text-muted-foreground mb-4" />
               <h3 className="text-xl font-semibold">Поступлений пока нет</h3>
               <p className="text-muted-foreground mt-2">
                 Здесь будут отображаться все финансовые поступления.
@@ -131,5 +141,3 @@ export default function ReceiptsPage() {
     </>
   );
 }
-
-    
