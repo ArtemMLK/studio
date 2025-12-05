@@ -22,19 +22,24 @@ export function useApplications() {
   const { selectedBranchId } = useBranchSelection();
 
   // Fetch all necessary data for enrichment
-  const { data: users } = useUsers();
-  const { data: lots } = useLots();
-  const { data: branches } = useBranches(true);
+  const { data: users, isLoading: usersLoading } = useUsers();
+  const { data: lots, isLoading: lotsLoading } = useLots();
+  const { data: branches, loading: branchesLoading } = useBranches(true);
 
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!firestore || !authUser || !users || !lots || !branches) {
-        if (!authUser) setLoading(false); // Only stop loading if auth is resolved and user is null
+    if (!firestore || !authUser) {
+        if (!authUser && !loading) setLoading(false);
         return;
     };
+
+    // Wait until all enrichment data is loaded before fetching applications
+    if (usersLoading || lotsLoading || branchesLoading) {
+      return;
+    }
 
 
     const fetchApplications = async () => {
@@ -67,15 +72,18 @@ export function useApplications() {
         setApplications(enrichedApps);
       } catch (err: any) {
         setError(err);
+        console.error("Error fetching applications: ", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchApplications();
-  }, [firestore, authUser, selectedBranchId, users, lots, branches]);
+  }, [firestore, authUser, selectedBranchId, users, lots, branches, usersLoading, lotsLoading, branchesLoading]);
 
-  return { data: applications, loading, error };
+  const combinedLoading = loading || usersLoading || lotsLoading || branchesLoading;
+
+  return { data: applications, loading: combinedLoading, error };
 }
 
 export function addApplication(applicationData: Pick<Application, 'lotId' | 'userId' | 'branchId' | 'procurementId'>) {

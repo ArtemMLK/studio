@@ -129,12 +129,13 @@ export default function ApplicationsPage() {
                       <Badge
                         variant="outline"
                         className={cn(
+                          'border-opacity-50',
                           app.status === 'Новая' &&
-                            'border-blue-500/50 text-blue-400',
+                            'border-blue-500 text-blue-400',
                           app.status === 'Принята' &&
-                            'border-green-500/50 text-green-400',
+                            'border-green-500 text-green-400',
                           app.status === 'Отклонена' &&
-                            'border-red-500/50 text-red-400'
+                            'border-red-500 text-red-400'
                         )}
                       >
                         {app.status}
