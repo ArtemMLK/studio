@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowLeft, Box, PlusCircle } from 'lucide-react';
+import { ArrowLeft, Box, PlusCircle, MoreHorizontal, Edit } from 'lucide-react';
 import Link from 'next/link';
 
 import { useProcurementProcess } from '@/firebase/firestore/procurements';
@@ -31,7 +31,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal } from 'lucide-react';
 
 export default function ProcurementDetailsPage() {
   const params = useParams();
@@ -49,12 +48,21 @@ export default function ProcurementDetailsPage() {
     currentUserData?.roles.includes('Менеджер');
 
   const handleLotAdded = (newLotData: Omit<Lot, 'id' | 'status'>) => {
+    // A more robust solution might involve using a placeholder image from a predefined list
+    const placeholderImages = [
+      'https://images.unsplash.com/photo-1586991339349-10a87b26c632?w=500',
+      'https://images.unsplash.com/photo-1560518883-ce09059ee353?w=500',
+      'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?w=500',
+    ];
+    const randomImage = placeholderImages[Math.floor(Math.random() * placeholderImages.length)];
+
     addLot({
       ...newLotData,
       status: 'Активен',
+      imageUrl: newLotData.imageUrl || randomImage,
       imageHint: 'custom lot',
     });
-    // Maybe update the lotCount on the procurement doc
+    // Maybe update the lotCount on the procurement doc in the future
   };
 
   if (procurementLoading) {
@@ -134,19 +142,40 @@ export default function ProcurementDetailsPage() {
             <p className="text-muted-foreground">{procurement.description}</p>
           </div>
         </div>
-        {canManage && (
-          <AddLotDialog
-            procurementId={procurementId}
-            branchId={procurement.branchId}
-            onLotAdded={handleLotAdded}
-            triggerButton={
-              <Button size="sm" className="ml-auto gap-1">
-                <PlusCircle className="h-4 w-4" />
-                Добавить Лот
-              </Button>
-            }
-          />
-        )}
+        <div className="flex items-center gap-2">
+            {canManage && (
+            <AddLotDialog
+                procurementId={procurementId}
+                branchId={procurement.branchId}
+                onLotAdded={handleLotAdded}
+                triggerButton={
+                <Button size="sm" className="gap-1">
+                    <PlusCircle className="h-4 w-4" />
+                    Добавить Лот
+                </Button>
+                }
+            />
+            )}
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-9 w-9">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Меню действий</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Действия</DropdownMenuLabel>
+                    {canManage && (
+                        <DropdownMenuItem asChild>
+                           <Link href={`/dashboard/procurements/${procurementId}/edit`}>
+                             <Edit className="mr-2 h-4 w-4" />
+                             Редактировать
+                           </Link>
+                        </DropdownMenuItem>
+                    )}
+                </DropdownMenuContent>
+             </DropdownMenu>
+        </div>
       </div>
 
       <div className="mt-6">
@@ -182,15 +211,17 @@ export default function ProcurementDetailsPage() {
                 {lots.map((lot) => (
                   <Card key={lot.id} className="flex flex-col">
                     <CardHeader className="p-0">
-                      <div className="relative h-48 w-full">
-                        <Image
-                          src={lot.imageUrl}
-                          alt={lot.title}
-                          fill
-                          className="rounded-t-lg object-cover"
-                          data-ai-hint={lot.imageHint}
-                        />
-                      </div>
+                      <Link href={`/dashboard/lots/${lot.id}`}>
+                        <div className="relative h-48 w-full">
+                            <Image
+                            src={lot.imageUrl}
+                            alt={lot.title}
+                            fill
+                            className="cursor-pointer rounded-t-lg object-cover transition-transform hover:scale-105"
+                            data-ai-hint={lot.imageHint}
+                            />
+                        </div>
+                      </Link>
                     </CardHeader>
                     <CardContent className="flex-grow p-4">
                       <Badge
@@ -203,7 +234,9 @@ export default function ProcurementDetailsPage() {
                       >
                         {lot.status}
                       </Badge>
-                      <h3 className="font-semibold">{lot.title}</h3>
+                       <Link href={`/dashboard/lots/${lot.id}`} className="hover:underline">
+                        <h3 className="font-semibold">{lot.title}</h3>
+                       </Link>
                       <p className="mt-2 text-xl font-bold">
                         {new Intl.NumberFormat('ru-RU').format(lot.price)}{' '}
                         {lot.currency}

@@ -65,26 +65,34 @@ export function useLot(lotId?: string) {
 
         const fetchExtraData = async () => {
             if (!firestore) return;
+            setLoading(true);
             try {
                 let procurementName = 'N/A';
                 let branchName = 'N/A';
 
                 // This is complex because procurements are in a subcollection
                 // A better structure would have procurements at the top level
-                const branchDocRef = doc(firestore, BRANCHES_COLLECTION, lotData.branchId);
-                const branchDoc = await getDoc(branchDocRef);
-                if (branchDoc.exists()) {
-                    branchName = (branchDoc.data() as Branch).name;
-                    const procDocRef = doc(branchDocRef, PROCUREMENT_PROCESSES_COLLECTION, lotData.procurementId);
-                    const procDoc = await getDoc(procDocRef);
-                    if (procDoc.exists()) {
-                        procurementName = (procDoc.data() as ProcurementProcess).name;
+                if (lotData.branchId) {
+                    const branchDocRef = doc(firestore, BRANCHES_COLLECTION, lotData.branchId);
+                    const branchDoc = await getDoc(branchDocRef);
+                    if (branchDoc.exists()) {
+                        branchName = (branchDoc.data() as Branch).name;
+                        if (lotData.procurementId) {
+                           const procDocRef = doc(branchDocRef, PROCUREMENT_PROCESSES_COLLECTION, lotData.procurementId);
+                            const procDoc = await getDoc(procDocRef);
+                            if (procDoc.exists()) {
+                                procurementName = (procDoc.data() as ProcurementProcess).name;
+                            }
+                        }
                     }
                 }
 
                 setLot({ ...lotData, procurementName, branchName });
             } catch (err: any) {
+                console.error("Error enriching lot data: ", err);
                 setError(err);
+                 // Still set the basic lot data even if enrichment fails
+                setLot(lotData);
             } finally {
                 setLoading(false);
             }
@@ -102,13 +110,13 @@ export function useLotsByProcurement(procurementId?: string) {
   return useLots(procurementId);
 }
 
-export async function addLot(lot: Omit<Lot, 'id'>) {
+export function addLot(lot: Omit<Lot, 'id'>) {
   const firestore = useFirestore();
   if (!firestore) {
     throw new Error('Firestore is not initialized');
   }
   const lotsCollection = collection(firestore, LOTS_COLLECTION);
-  await addDocumentNonBlocking(lotsCollection, lot);
+  addDocumentNonBlocking(lotsCollection, lot);
 }
 
 export function updateLot(lotId: string, data: Partial<Omit<Lot, 'id'>>) {

@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-import { useLot } from '@/firebase/firestore/lots';
+import { useLot, updateLot } from '@/firebase/firestore/lots';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,18 +17,23 @@ import {
 } from '@/components/ui/card';
 import { AddLotDialog } from '@/components/add-lot-dialog';
 import type { Lot } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function EditLotPage() {
   const params = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const lotId = params.lotId as string;
 
   const { data: lot, loading: lotLoading } = useLot(lotId);
 
   const handleLotUpdated = (updatedLotData: Omit<Lot, 'id' | 'status'>) => {
-    // Logic to update the lot will go here
-    console.log('Updating lot:', updatedLotData);
+    updateLot(lotId, updatedLotData);
+    toast({
+        title: 'Лот обновлен',
+        description: `Данные лота "${updatedLotData.title}" успешно обновлены.`
+    });
     router.push(`/dashboard/lots/${lotId}`);
   };
 

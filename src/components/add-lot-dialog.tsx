@@ -51,9 +51,7 @@ const formSchema = z.object({
   branchId: z.string(),
   plan: z.coerce.number().positive('План должен быть положительным числом.'),
   price: z.coerce.number().positive('Цена должна быть положительным числом.'),
-  deadline: z.date({
-    required_error: 'Необходимо указать крайний срок.',
-  }),
+  deadline: z.union([z.date(), z.string()]).transform(val => typeof val === 'string' ? parse(val, 'dd.MM.yyyy', new Date()) : val),
   imageUrl: z.string().url('Необходимо указать корректный URL изображения.'),
   currency: z.string().default('₽'),
 });
@@ -71,7 +69,7 @@ export function AddLotDialog({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
-
+  
   useEffect(() => {
     const deadlineDate = editingLot?.deadline
       ? parse(editingLot.deadline, 'dd.MM.yyyy', new Date())

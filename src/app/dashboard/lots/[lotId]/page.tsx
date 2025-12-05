@@ -43,12 +43,12 @@ export default function LotDetailsPage() {
              </div>
         </div>
         <Card>
-            <CardHeader>
+            <CardHeader className="p-0 border-b">
                 <div className="relative h-64 w-full">
-                    <Skeleton className="h-full w-full rounded-lg" />
+                    <Skeleton className="h-full w-full rounded-t-lg" />
                 </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="grid gap-2">
                         <Skeleton className="h-6 w-3/4" />
