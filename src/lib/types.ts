@@ -65,6 +65,10 @@ export type Allocation = {
     branchId: string; // Denormalized
     procurementId: string; // Denormalized
     lotId: string; // Denormalized
+    // Enriched fields
+    userName?: string;
+    lotTitle?: string;
+    branchName?: string;
 };
 
 

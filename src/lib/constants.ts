@@ -4,5 +4,4 @@ export const LOTS_COLLECTION = 'lots';
 export const PROCUREMENT_PROCESSES_COLLECTION = 'procurementProcesses';
 export const APPLICATIONS_COLLECTION = 'applications';
 export const RECEIPTS_COLLECTION = 'receipts';
-
-    
+export const ALLOCATIONS_COLLECTION = 'allocations';
