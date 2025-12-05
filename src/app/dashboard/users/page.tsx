@@ -18,21 +18,27 @@ export default function UsersPage() {
       return;
     }
 
-    // После завершения загрузки проверяем права
-    const isAdmin = hasAdminRole(currentUserData?.roles);
+    // После завершения загрузки, если данных все еще нет, это может быть ошибкой
+    // или пользователь вышел. В любом случае, у него нет доступа.
+    if (!currentUserData) {
+        console.log('Redirecting because currentUserData is missing after load.', { isUserLoading, currentUserData });
+        router.replace('/dashboard');
+        return;
+    }
 
+    // Теперь, когда мы уверены, что данные есть, проверяем роль
+    const isAdmin = hasAdminRole(currentUserData.roles);
     if (!isAdmin) {
-      console.log('Redirecting...', {
+      console.log('Redirecting because user is not an admin.', {
         isUserLoading,
         isAdmin,
-        currentUserData,
+        roles: currentUserData.roles,
       });
       router.replace('/dashboard');
     }
   }, [isUserLoading, currentUserData, router]);
 
   // Пока идет загрузка, показываем скелетон.
-  // Это также предотвращает мигание контента для не-админов перед редиректом.
   if (isUserLoading) {
     return (
       <>
@@ -51,12 +57,26 @@ export default function UsersPage() {
   }
 
   // Если загрузка завершена и пользователь - админ, показываем таблицу.
-  // Если не админ, useEffect уже запустил редирект, и здесь будет null,
-  // что предотвратит рендер таблицы для обычного пользователя.
-  if (hasAdminRole(currentUserData?.roles)) {
+  // Если не админ, useEffect уже запустил редирект, и здесь будет null
+  // (или пустой div), что предотвратит рендер таблицы для обычного пользователя.
+  if (currentUserData && hasAdminRole(currentUserData.roles)) {
     return <UsersTable />;
   }
 
-  // Для не-админов, пока происходит редирект, ничего не показываем
-  return null;
+  // Для не-админов, пока происходит редирект, или если данные не загрузились,
+  // показываем состояние загрузки или ничего не показываем, чтобы избежать "мигания".
+  return (
+    <>
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <Skeleton className="h-10 w-44" />
+      </div>
+      <div className="mt-4">
+        <Skeleton className="h-[500px] w-full" />
+      </div>
+    </>
+  );
 }
