@@ -10,6 +10,8 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
 import {
   Table,
@@ -87,11 +89,12 @@ export default function UsersPage() {
     );
   }
 
-  // If user is not an admin, redirect them away
-  if (!hasAdminRole(currentUserData?.roles)) {
+  // If loading is finished AND the user is not an admin, then redirect.
+  if (!isUserLoading && !hasAdminRole(currentUserData?.roles)) {
     redirect('/dashboard');
   }
 
+  // If loading is finished and user is an admin, render the page.
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
