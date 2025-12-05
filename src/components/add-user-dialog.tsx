@@ -88,7 +88,7 @@ export function AddUserDialog({
         'Telegram должен начинаться с @'
       ),
     roles: z
-      .array(z.string())
+      .array(z.string().transform(val => val as UserRole))
       .min(1, 'Необходимо выбрать хотя бы одну роль.'),
     branchIds: z
       .array(z.string())
@@ -113,7 +113,6 @@ export function AddUserDialog({
 
     const newUser: Omit<User, 'id'> = {
       ...values,
-      roles: values.roles as UserRole[],
       blacklisted: false,
       avatar: `https://i.pravatar.cc/150?u=${values.login}`,
     };

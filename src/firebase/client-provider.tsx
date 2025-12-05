@@ -83,7 +83,7 @@ export function FirebaseClientProvider({
             name: 'Администратор',
             surname: 'Системы',
             phone: '+7 (000) 000-00-00',
-            roles: ['Администратор'],
+            roles: ['Администратор'], // <--- FIX: Ensure roles is an array
             branchIds: [], // Admin is not tied to a specific branch
             blacklisted: false,
             avatar: `https://i.pravatar.cc/150?u=${adminEmail}`,
