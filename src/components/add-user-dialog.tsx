@@ -297,7 +297,7 @@ export function AddUserDialog({
                           {field.value?.length
                             ? field.value.length > 2
                               ? `${field.value.length} филиалов выбрано`
-                              : field.value.join(', ')
+                              : branchesData?.filter(b => field.value.includes(b.id)).map(b => b.name).join(', ')
                             : 'Выберите филиалы'}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -317,17 +317,17 @@ export function AddUserDialog({
                                 key={branch.id}
                                 onSelect={() => {
                                    const currentValue = form.getValues('branchIds');
-                                   if (currentValue.includes(branch.name)) {
-                                     form.setValue('branchIds', currentValue.filter(b => b !== branch.name), { shouldValidate: true });
+                                   if (currentValue.includes(branch.id)) {
+                                     form.setValue('branchIds', currentValue.filter(b => b !== branch.id), { shouldValidate: true });
                                    } else {
-                                     form.setValue('branchIds', [...currentValue, branch.name], { shouldValidate: true });
+                                     form.setValue('branchIds', [...currentValue, branch.id], { shouldValidate: true });
                                    }
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     'mr-2 h-4 w-4',
-                                    field.value.includes(branch.name)
+                                    field.value.includes(branch.id)
                                       ? 'opacity-100'
                                       : 'opacity-0'
                                   )}
