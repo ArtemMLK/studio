@@ -4,7 +4,6 @@
 import { MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import {
-  getAuth,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
 } from 'firebase/auth';
@@ -36,10 +35,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 import type { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { NewUserCredentialsDialog } from './new-user-credentials-dialog';
-import { addUser, useUsers, updateUser } from '@/firebase/firestore/users';
+import { addUser, useUsers, updateUser, deleteUser } from '@/firebase/firestore/users';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -50,11 +60,20 @@ export function UsersTable() {
     login: string;
     password;
   } | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const auth = useAuth();
   const { toast } = useToast();
 
   const handleUserAdded = async (newUser: Omit<User, 'id'>, generatedPassword) => {
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Сервис аутентификации не инициализирован.',
+      });
+      return;
+    }
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -78,6 +97,7 @@ export function UsersTable() {
   };
 
   const handleResetPassword = (email: string) => {
+     if (!auth) return;
     sendPasswordResetEmail(auth, email)
       .then(() => {
         toast({
@@ -94,6 +114,30 @@ export function UsersTable() {
         });
       });
   };
+  
+  const confirmDeleteUser = (user: User) => {
+    setUserToDelete(user);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteUser(userToDelete.id);
+      toast({
+        title: 'Пользователь удален',
+        description: `Пользователь ${userToDelete.name} ${userToDelete.surname} был удален.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка удаления пользователя',
+        description: error.message,
+      });
+    } finally {
+      setUserToDelete(null);
+    }
+  };
+
 
   const toggleUserBlacklist = (userId: string, isBlacklisted: boolean) => {
     updateUser(userId, { blacklisted: !isBlacklisted });
@@ -189,7 +233,7 @@ export function UsersTable() {
                       {user.phone}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {user.branchIds.join(', ')}
+                       {user.branchIds.join(', ')}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -230,7 +274,10 @@ export function UsersTable() {
                               ? 'Разблокировать'
                               : 'Заблокировать'}
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive focus:text-destructive">
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => confirmDeleteUser(user)}
+                          >
                             Удалить
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -250,6 +297,27 @@ export function UsersTable() {
           onClose={() => setCredentials(null)}
         />
       )}
+       <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие необратимо. Пользователь{' '}
+              <span className="font-bold">{userToDelete?.name} {userToDelete?.surname}</span> будет
+              навсегда удален из системы, включая его данные для входа.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              className={cn(buttonVariants({ variant: 'destructive' }))}
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

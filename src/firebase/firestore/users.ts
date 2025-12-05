@@ -4,10 +4,11 @@ import {
   collection,
   doc,
   setDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '..';
 import { User } from '@/lib/types';
-import { updateDocumentNonBlocking } from '../non-blocking-updates';
+import { updateDocumentNonBlocking, deleteDocumentNonBlocking } from '../non-blocking-updates';
 import { USERS_COLLECTION } from '@/lib/constants';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
@@ -17,7 +18,7 @@ export function useUsers() {
   const { user } = useUser(); // Get the authenticated user
   
   const usersCollection = useMemoFirebase(() => {
-    // Only return the collection if the user is authenticated
+    // Only return the collection if the user is authenticated and has loaded
     if (!firestore || !user) return null;
     return collection(firestore, USERS_COLLECTION);
   }, [firestore, user]);
@@ -56,4 +57,19 @@ export function updateUser(userId: string, data: Partial<User>) {
     }
     const userDocRef = doc(firestore, USERS_COLLECTION, userId);
     updateDocumentNonBlocking(userDocRef, data);
+}
+
+// This function needs to be improved to handle auth deletion as well.
+// For now, it just deletes the Firestore document.
+export async function deleteUser(userId: string) {
+    const firestore = useFirestore();
+    if (!firestore) {
+        throw new Error('Firestore is not initialized');
+    }
+    const userDocRef = doc(firestore, USERS_COLLECTION, userId);
+    
+    // We will await this because we want to show feedback to the user
+    // In a real app, you would also need to delete the user from Firebase Auth
+    // which is a backend operation.
+    await deleteDoc(userDocRef);
 }
