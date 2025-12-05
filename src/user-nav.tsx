@@ -2,7 +2,7 @@
 'use client';
 
 import { CircleUser, LogOut, User as UserIcon } from 'lucide-react';
-import { useFormState } from 'react-dom';
+import { useActionState, useMemo } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -18,13 +18,12 @@ import {
 import { logout } from '@/app/actions';
 import { useUser } from '@/firebase'; // Using the central user hook
 import { Skeleton } from './components/ui/skeleton';
-import { useMemo } from 'react';
 import { useUsers } from './firebase/firestore/users';
 
 export function UserNav() {
   const { user, isUserLoading: isAuthLoading } = useUser();
   const { data: usersData, isLoading: isUsersLoading } = useUsers();
-  const [_, dispatch] = useFormState(logout, undefined);
+  const [_, dispatch] = useActionState(logout, undefined);
 
   const currentUserData = useMemo(() => {
     if (!user || !usersData) return null;
