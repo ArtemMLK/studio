@@ -1,9 +1,9 @@
 'use client';
 
-import { ClientOnly } from '@/components/client-only';
-import { UsersTable } from '@/components/users-table';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
-import { redirect } from 'next/navigation';
 import type { UserRole } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -21,6 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { UsersTable } from '@/components/users-table';
+import { ClientOnly } from '@/components/client-only';
 
 const hasAdminRole = (roles: UserRole | UserRole[] | undefined): boolean => {
     if (!roles) return false;
@@ -32,9 +34,25 @@ const hasAdminRole = (roles: UserRole | UserRole[] | undefined): boolean => {
 
 
 export default function UsersPage() {
+  const router = useRouter();
   const { currentUserData, isUserLoading } = useCurrentUserData();
 
-  if (isUserLoading) {
+  useEffect(() => {
+    // Ждем завершения загрузки данных пользователя
+    if (isUserLoading) {
+      return; 
+    }
+    
+    // Если после загрузки у пользователя нет прав администратора, перенаправляем его
+    if (!hasAdminRole(currentUserData?.roles)) {
+      router.replace('/dashboard');
+    }
+
+  }, [isUserLoading, currentUserData, router]);
+
+  // Пока идет загрузка или если у пользователя нет прав (до срабатывания редиректа),
+  // показываем состояние загрузки, чтобы избежать мелькания контента.
+  if (isUserLoading || !hasAdminRole(currentUserData?.roles)) {
     return (
         <>
             <div className="flex items-center justify-between space-y-2">
@@ -89,12 +107,7 @@ export default function UsersPage() {
     );
   }
 
-  // If loading is finished AND the user is not an admin, then redirect.
-  if (!isUserLoading && !hasAdminRole(currentUserData?.roles)) {
-    redirect('/dashboard');
-  }
-
-  // If loading is finished and user is an admin, render the page.
+  // Если все проверки пройдены, рендерим контент страницы для администратора
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
