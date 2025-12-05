@@ -65,19 +65,17 @@ service cloud.firestore {
       allow update: if isSignedIn() && isNotBlacklisted() && hasAccessToBranch(resource.data.branchId);
       allow delete: if isAdmin();
     }
+
+    match /receipts/{receiptId} {
+      allow read, list: if isSignedIn() && isNotBlacklisted() && hasAccessToBranch(resource.data.branchId);
+      allow create, update: if isSignedIn() && isNotBlacklisted() && hasAccessToBranch(request.resource.data.branchId);
+      allow delete: if isAdmin();
+    }
     
     match /branches/{branchId}/procurementProcesses/{procurementProcessId} {
       allow get, list: if hasAccessToBranch(branchId);
       allow create: if hasAccessToBranch(branchId);
       allow update, delete: if hasAccessToBranch(branchId) && resource != null;
-
-      // Lots are no longer nested here in rules, they are at the root
-      
-      match /receipts/{receiptId} {
-        allow get, list: if hasAccessToBranch(branchId);
-        allow create: if hasAccessToBranch(branchId);
-        allow update, delete: if hasAccessToBranch(branchId) && resource != null;
-      }
       
       match /applications/{applicationId}/allocations/{allocationId} {
         allow get, list: if hasAccessToBranch(branchId);

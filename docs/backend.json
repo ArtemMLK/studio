@@ -182,11 +182,21 @@
         "amount": {
           "type": "number",
           "description": "The amount of the receipt."
+        },
+        "branchId": {
+          "type": "string",
+          "description": "Denormalized reference to Branch for rule filtering."
+        },
+        "procurementId": {
+            "type": "string",
+            "description": "Denormalized reference to Procurement for rule filtering."
         }
       },
       "required": [
         "id",
-        "lotId"
+        "lotId",
+        "branchId",
+        "procurementId"
       ]
     },
     "Allocation": {
@@ -389,7 +399,7 @@
           ]
         }
       },
-       {
+      {
         "path": "/applications/{applicationId}",
         "definition": {
           "entityName": "Application",
@@ -401,6 +411,22 @@
             {
               "name": "applicationId",
               "description": "The unique identifier of the application."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/receipts/{receiptId}",
+        "definition": {
+          "entityName": "Receipt",
+          "schema": {
+            "$ref": "#/backend/entities/Receipt"
+          },
+          "description": "Stores all receipts in the system. Contains denormalized branchId and procurementId for filtering.",
+          "params": [
+            {
+              "name": "receiptId",
+              "description": "The unique identifier of the receipt."
             }
           ]
         }
@@ -421,34 +447,6 @@
             {
               "name": "procurementProcessId",
               "description": "The unique identifier of the procurement process."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/branches/{branchId}/procurementProcesses/{procurementProcessId}/lots/{lotId}/receipts/{receiptId}",
-        "definition": {
-          "entityName": "Receipt",
-          "schema": {
-            "$ref": "#/backend/entities/Receipt"
-          },
-          "description": "Stores receipts for a specific lot within a procurement process and branch.",
-          "params": [
-            {
-              "name": "branchId",
-              "description": "The unique identifier of the branch."
-            },
-            {
-              "name": "procurementProcessId",
-              "description": "The unique identifier of the procurement process."
-            },
-            {
-              "name": "lotId",
-              "description": "The unique identifier of the lot."
-            },
-            {
-              "name": "receiptId",
-              "description": "The unique identifier of the receipt."
             }
           ]
         }

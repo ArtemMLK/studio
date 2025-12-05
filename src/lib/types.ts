@@ -45,6 +45,18 @@ export type Application = {
   procurementId: string; // Denormalized for filtering
 };
 
+export type Receipt = {
+    id: string;
+    lotId: string;
+    lotTitle?: string; // Denormalized
+    receiptDate: string;
+    amount: number;
+    currency: string;
+    branchId: string; // Denormalized
+    branchName?: string; // Denormalized
+    procurementId: string; // Denormalized
+};
+
 
 export type Kpi = {
   title: string;
