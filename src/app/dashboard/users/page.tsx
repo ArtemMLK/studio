@@ -18,15 +18,22 @@ export default function UsersPage() {
       return;
     }
 
-    // После загрузки, если данных нет или пользователь не админ, перенаправить
-    if (!currentUserData || !hasAdminRole(currentUserData.roles)) {
+    // После завершения загрузки проверяем права
+    const isAdmin = hasAdminRole(currentUserData?.roles);
+
+    if (!isAdmin) {
+      console.log('Redirecting...', {
+        isUserLoading,
+        isAdmin,
+        currentUserData,
+      });
       router.replace('/dashboard');
     }
   }, [isUserLoading, currentUserData, router]);
 
-  // Пока идет загрузка, или если пользователь не админ (до того как сработает редирект),
-  // показываем состояние загрузки. Это предотвращает мигание контента.
-  if (isUserLoading || !currentUserData || !hasAdminRole(currentUserData.roles)) {
+  // Пока идет загрузка, показываем скелетон.
+  // Это также предотвращает мигание контента для не-админов перед редиректом.
+  if (isUserLoading) {
     return (
       <>
         <div className="flex items-center justify-between space-y-2">
@@ -43,6 +50,13 @@ export default function UsersPage() {
     );
   }
 
-  // Если мы дошли сюда, значит загрузка завершена и пользователь - админ.
-  return <UsersTable />;
+  // Если загрузка завершена и пользователь - админ, показываем таблицу.
+  // Если не админ, useEffect уже запустил редирект, и здесь будет null,
+  // что предотвратит рендер таблицы для обычного пользователя.
+  if (hasAdminRole(currentUserData?.roles)) {
+    return <UsersTable />;
+  }
+
+  // Для не-админов, пока происходит редирект, ничего не показываем
+  return null;
 }
