@@ -41,7 +41,7 @@ export default function AllocationsPage() {
   const loading = allocationsLoading || applicationsLoading || usersLoading || lotsLoading || branchesLoading;
 
   const enrichedAllocations = useMemo(() => {
-    if (!allocations || !applications || !users || !lots || !branches) return [];
+    if (loading || !allocations || !applications || !users || !lots || !branches) return [];
     
     const appsMap = new Map(applications.map((a) => [a.id, a]));
     const usersMap = new Map(users.map((u) => [u.id, `${u.surname} ${u.name}`]));
@@ -58,7 +58,7 @@ export default function AllocationsPage() {
         branchName: app ? branchesMap.get(app.branchId) || 'Неизвестно' : 'Неизвестно',
         };
     });
-  }, [allocations, applications, users, lots, branches]);
+  }, [loading, allocations, applications, users, lots, branches]);
 
 
   const handleAllocationAdded = (newAllocationData: Omit<Allocation, 'id'>) => {

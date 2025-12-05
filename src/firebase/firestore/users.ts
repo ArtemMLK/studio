@@ -12,22 +12,36 @@ import { updateDocumentNonBlocking, deleteDocumentNonBlocking } from '../non-blo
 import { USERS_COLLECTION } from '@/lib/constants';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
+import { useCurrentUserData } from '@/hooks/use-current-user-data';
+
 
 export function useUsers() {
   const firestore = useFirestore();
-  const { user } = useUser(); // Get the authenticated user
+  const { user: authUser } = useUser();
+  const { currentUserData, isUserLoading: isCurrentUserLoading } = useCurrentUserData();
   
-  const usersCollection = useMemoFirebase(() => {
-    // Only return the collection if the user is authenticated and has loaded
-    if (!firestore || !user) return null;
-    return collection(firestore, USERS_COLLECTION);
-  }, [firestore, user]);
+  const usersCollectionQuery = useMemoFirebase(() => {
+    if (!firestore || !authUser || !currentUserData) return null;
 
-  const { data, isLoading, error } = useCollection<User>(usersCollection);
+    // The 'list' operation on the users collection is only allowed for admins.
+    // To prevent permission errors for other roles, we only return the query if the user is an admin.
+    if (currentUserData.roles.includes('Администратор')) {
+      return collection(firestore, USERS_COLLECTION);
+    }
+    
+    // For non-admins, return null. This hook should only be used on pages/components
+    // that are restricted to admins.
+    return null;
+  }, [firestore, authUser, currentUserData]);
 
-  // The hook's loading state should reflect the auth state as well.
-  // It's loading if we are waiting for the user OR if we are waiting for firestore data.
-  return { data: data || [], isLoading: !user || isLoading, error };
+  const { data, isLoading, error } = useCollection<User>(usersCollectionQuery);
+  
+  // If the user is not an admin, we are not fetching data, so we should return an empty array and false for loading.
+  const isAdmin = currentUserData?.roles.includes('Администратор');
+  const finalIsLoading = isAdmin ? (isCurrentUserLoading || isLoading) : false;
+  const finalData = isAdmin ? data : [];
+
+  return { data: finalData || [], isLoading: finalIsLoading, error };
 }
 
 // Note: The 'id' is the Firebase Auth UID.

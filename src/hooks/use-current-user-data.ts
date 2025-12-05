@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useUser } from '@/firebase';
-import { useUsers } from '@/firebase/firestore/users';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { USERS_COLLECTION } from '@/lib/constants';
 import type { User } from '@/lib/types';
 
 interface UseCurrentUserDataResult {
@@ -12,20 +13,22 @@ interface UseCurrentUserDataResult {
 
 /**
  * A hook to get the full Firestore document of the currently authenticated user.
- * It combines the auth state from `useUser` and the data from `useUsers`.
+ * It efficiently fetches ONLY the current user's document.
  * @returns An object containing the current user's full data and a loading state.
  */
 export function useCurrentUserData(): UseCurrentUserDataResult {
   const { user: authUser, isUserLoading: isAuthLoading } = useUser();
-  const { data: usersData, isLoading: isUsersLoading } = useUsers();
+  const firestore = useFirestore();
 
-  const currentUserData = useMemo(() => {
-    if (!authUser || !usersData) return null;
-    return usersData.find(u => u.id === authUser.uid) || null;
-  }, [authUser, usersData]);
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !authUser) return null;
+    return doc(firestore, USERS_COLLECTION, authUser.uid);
+  }, [firestore, authUser]);
 
-  // The overall loading state is true if either the auth state or the users collection is loading.
-  const isUserLoading = isAuthLoading || isUsersLoading;
+  const { data: currentUserData, isLoading: isDocLoading } = useDoc<User>(userDocRef);
+
+  // The overall loading state is true if either the auth state or the user document is loading.
+  const isUserLoading = isAuthLoading || isDocLoading;
 
   return { currentUserData, isUserLoading };
 }

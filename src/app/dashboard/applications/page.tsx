@@ -52,7 +52,7 @@ export default function ApplicationsPage() {
   const loading = applicationsLoading || usersLoading || lotsLoading || branchesLoading;
 
   const enrichedApplications = useMemo(() => {
-    if (!applications || !users || !lots || !branches) return [];
+    if (loading || !applications || !users || !lots || !branches) return [];
     
     const usersMap = new Map(users.map((u) => [u.id, `${u.surname} ${u.name}`]));
     const lotsMap = new Map(lots.map((l) => [l.id, l.title]));
@@ -64,7 +64,7 @@ export default function ApplicationsPage() {
       lotTitle: lotsMap.get(app.lotId) || 'Неизвестный лот',
       branchName: branchesMap.get(app.branchId) || 'Неизвестный филиал',
     }));
-  }, [applications, users, lots, branches]);
+  }, [loading, applications, users, lots, branches]);
 
 
   const handleStatusChange = (
