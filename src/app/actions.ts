@@ -4,11 +4,13 @@
 import {
   signInWithEmailAndPassword,
 } from 'firebase/auth';
+import { getDoc, doc } from 'firebase/firestore';
 import { redirect } from 'next/navigation';
 import { initializeFirebase } from '@/firebase/server';
+import { USERS_COLLECTION } from '@/lib/constants';
 
 // Initialize Firebase Admin SDK
-const { auth } = initializeFirebase();
+const { auth, firestore } = initializeFirebase();
 
 export async function login(
   prevState: { error: string } | undefined,
@@ -22,8 +24,20 @@ export async function login(
   }
 
   try {
-    // We are using the login field as the email for authentication
-    await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // After successful sign-in, check the user's document in Firestore
+    const userDocRef = doc(firestore, USERS_COLLECTION, user.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists() && userDoc.data()?.blacklisted === true) {
+      await auth.signOut(); // Sign out the blacklisted user immediately
+      return { error: 'Ваш аккаунт заблокирован.' };
+    }
+    
+    // If user doc doesn't exist or user is not blacklisted, proceed to dashboard
+
   } catch (error: any) {
     console.error('Firebase Auth Error:', error.code, error.message);
     if (
