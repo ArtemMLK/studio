@@ -18,7 +18,7 @@ export default function UsersPage() {
       return;
     }
     
-    // 2. Если после загрузки данные отсутствуют или у пользователя нет роли админа,
+    // 2. После загрузки, если данных нет или у пользователя нет роли админа,
     // выполняем перенаправление.
     const isAdmin = currentUserData ? hasAdminRole(currentUserData.roles) : false;
     if (!isAdmin) {

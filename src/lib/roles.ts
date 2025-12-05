@@ -6,7 +6,7 @@ import type { UserRole } from '@/lib/types';
  * @returns boolean - True if the user has an Admin role.
  */
 export const hasAdminRole = (
-  userRoles: UserRole | UserRole[] | undefined
+  userRoles: UserRole[] | UserRole | undefined
 ): boolean => {
   if (!userRoles) return false;
 
