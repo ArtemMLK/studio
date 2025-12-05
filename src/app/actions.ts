@@ -54,8 +54,6 @@ export async function login(
 }
 
 export async function logout() {
-  // In a real application, you would invalidate the user's session here.
-  // This might involve clearing a session cookie or token.
   await auth.signOut();
   redirect('/');
 }
