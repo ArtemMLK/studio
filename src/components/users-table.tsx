@@ -2,7 +2,7 @@
 'use client';
 
 import { MoreHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -50,12 +50,14 @@ import type { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { NewUserCredentialsDialog } from './new-user-credentials-dialog';
 import { addUser, useUsers, updateUser, deleteUser } from '@/firebase/firestore/users';
+import { useBranches } from '@/firebase/firestore/branches';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 export function UsersTable() {
-  const { data: users, isLoading } = useUsers();
+  const { data: users, isLoading: usersLoading } = useUsers();
+  const { data: branches, loading: branchesLoading } = useBranches(true);
   const [credentials, setCredentials] = useState<{
     login: string;
     password;
@@ -64,6 +66,13 @@ export function UsersTable() {
 
   const auth = useAuth();
   const { toast } = useToast();
+
+  const isLoading = usersLoading || branchesLoading;
+
+  const branchNameMap = useMemo(() => {
+    if (!branches) return new Map();
+    return new Map(branches.map(branch => [branch.id, branch.name]));
+  }, [branches]);
 
   const handleUserAdded = async (newUser: Omit<User, 'id'>, generatedPassword) => {
     if (!auth) {
@@ -122,6 +131,9 @@ export function UsersTable() {
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
     try {
+      // In a real app, you would also need to delete the user from Firebase Auth
+      // This is a backend operation and requires admin privileges.
+      // For this prototype, we only delete the Firestore document.
       await deleteUser(userToDelete.id);
       toast({
         title: 'Пользователь удален',
@@ -233,7 +245,7 @@ export function UsersTable() {
                       {user.phone}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                       {user.branchIds.join(', ')}
+                       {user.branchIds.map(id => branchNameMap.get(id) || id).join(', ')}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -321,3 +333,5 @@ export function UsersTable() {
     </>
   );
 }
+
+    
