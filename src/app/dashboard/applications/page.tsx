@@ -23,6 +23,9 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useApplications, updateApplicationStatus } from '@/firebase/firestore/applications';
+import { useUsers } from '@/firebase/firestore/users';
+import { useLots } from '@/firebase/firestore/lots';
+import { useBranches } from '@/firebase/firestore/branches';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -35,10 +38,34 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import type { ApplicationStatus } from '@/lib/types';
+import { useMemo } from 'react';
 
 export default function ApplicationsPage() {
-  const { data: applications, loading } = useApplications();
+  const { data: applications, loading: applicationsLoading } = useApplications();
   const { toast } = useToast();
+
+  // Fetch enrichment data separately
+  const { data: users, isLoading: usersLoading } = useUsers();
+  const { data: lots, loading: lotsLoading } = useLots();
+  const { data: branches, loading: branchesLoading } = useBranches(true);
+
+  const loading = applicationsLoading || usersLoading || lotsLoading || branchesLoading;
+
+  const enrichedApplications = useMemo(() => {
+    if (!applications || !users || !lots || !branches) return [];
+    
+    const usersMap = new Map(users.map((u) => [u.id, `${u.surname} ${u.name}`]));
+    const lotsMap = new Map(lots.map((l) => [l.id, l.title]));
+    const branchesMap = new Map(branches.map((b) => [b.id, b.name]));
+
+    return applications.map(app => ({
+      ...app,
+      userName: usersMap.get(app.userId) || 'Неизвестный пользователь',
+      lotTitle: lotsMap.get(app.lotId) || 'Неизвестный лот',
+      branchName: branchesMap.get(app.branchId) || 'Неизвестный филиал',
+    }));
+  }, [applications, users, lots, branches]);
+
 
   const handleStatusChange = (
     applicationId: string,
@@ -104,7 +131,7 @@ export default function ApplicationsPage() {
                 ))}
               </TableBody>
             </Table>
-          ) : applications && applications.length > 0 ? (
+          ) : enrichedApplications && enrichedApplications.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -117,7 +144,7 @@ export default function ApplicationsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {applications.map((app) => (
+                {enrichedApplications.map((app) => (
                   <TableRow key={app.id}>
                     <TableCell className="font-medium">{app.userName}</TableCell>
                     <TableCell>{app.lotTitle}</TableCell>
