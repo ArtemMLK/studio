@@ -37,43 +37,26 @@ export function useLots(procurementId?: string) {
     if (!firestore || !authUser || !currentUserData) return null;
 
     let q: Query | null = collection(firestore, LOTS_COLLECTION);
-    const userRoles = currentUserData?.roles || [];
-    const userBranchIds = currentUserData?.branchIds || [];
+    const whereClauses: any[] = [];
 
-    // If a specific procurement is requested, that takes precedence
     if (procurementId) {
-      return query(q, where('procurementId', '==', procurementId));
+      whereClauses.push(where('procurementId', '==', procurementId));
     }
 
-    const isAdmin = userRoles.includes('Администратор');
-    const isManager = userRoles.includes('Менеджер');
-
-    // Handle branch filtering based on roles
-    if (isAdmin) {
-      // Admin can see all or filter by a specific branch
-      if (selectedBranchId && selectedBranchId !== 'all') {
-        q = query(q, where('branchId', '==', selectedBranchId));
-      }
-    } else if (isManager) {
-      // Manager sees lots from their assigned branches
-      const accessibleBranches =
-        selectedBranchId && selectedBranchId !== 'all'
-          ? userBranchIds.includes(selectedBranchId)
-            ? [selectedBranchId]
-            : [] // Manager selected a branch they can't see, so query for nothing
-          : userBranchIds; // "All branches" for a manager means all of *their* branches
-
-      if (accessibleBranches.length > 0) {
-        q = query(q, where('branchId', 'in', accessibleBranches));
-      } else {
-        q = null; // Manager has no branches, so no lots to see
-      }
-    } else {
-      // Participant or Analyst - can see all lots for now, can be filtered by selected branch
-      if (selectedBranchId && selectedBranchId !== 'all') {
-        q = query(q, where('branchId', '==', selectedBranchId));
-      }
+    if (selectedBranchId && selectedBranchId !== 'all') {
+       whereClauses.push(where('branchId', '==', selectedBranchId));
     }
+
+    if (whereClauses.length > 0) {
+        q = query(q, ...whereClauses);
+    }
+    
+    console.log('useLots Query:', {
+        path: 'lots',
+        filters: whereClauses.map(w => ({
+            field: w['_f'], op: w['_op'], value: w['_v']
+        }))
+    });
 
     return q;
   }, [

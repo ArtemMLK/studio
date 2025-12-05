@@ -6,6 +6,7 @@ import { addDocumentNonBlocking, updateDocumentNonBlocking } from '../non-blocki
 import { BRANCHES_COLLECTION, USERS_COLLECTION } from '@/lib/constants';
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
 import { useMemo, useState, useEffect } from 'react';
+import { doc } from 'firebase/firestore';
 
 export function useBranches(all: boolean = false) {
   const firestore = useFirestore();
@@ -22,24 +23,33 @@ export function useBranches(all: boolean = false) {
     let q: Query | null = collection(firestore, BRANCHES_COLLECTION);
     const userRoles = currentUserData.roles || [];
     const userBranchIds = currentUserData.branchIds || [];
+    const isAdmin = userRoles.includes('Администратор');
 
-    // If 'all' is requested, only admin can get it.
-    if (all) {
-      if (userRoles.includes('Администратор')) {
-        return q;
-      }
-      // Non-admin requesting 'all' gets only their own branches.
-      if (userBranchIds.length === 0) return null;
-      return query(q, where('__name__', 'in', userBranchIds));
-    }
+    let finalQuery: Query | null = null;
 
-    // Default behavior: Admin gets all, others get their assigned branches.
-    if (userRoles.includes('Администратор')) {
-      return q;
+    if (isAdmin) {
+      // Администратор может запрашивать все филиалы без ограничений.
+      finalQuery = q;
     } else {
-      if (userBranchIds.length === 0) return null; // Non-admin with no branches gets nothing.
-      return query(q, where('__name__', 'in', userBranchIds));
+      // Не-администраторы могут запрашивать только те филиалы, ID которых есть в их профиле.
+      if (userBranchIds.length > 0) {
+        finalQuery = query(q, where('__name__', 'in', userBranchIds));
+      } else {
+        // Если у пользователя нет филиалов, нет смысла делать запрос.
+        finalQuery = null;
+      }
     }
+
+    console.log('useBranches Query:', {
+        path: finalQuery ? 'branches' : 'null',
+        filters: finalQuery && (finalQuery as any)._query.filters.map((f:any) => ({
+            field: f.field.canonicalString(), op: f.op, value: f.value.value
+        })),
+        isAdmin,
+        userBranchIds
+    });
+
+    return finalQuery;
   }, [firestore, authUser, currentUserData, all]);
 
   useEffect(() => {
