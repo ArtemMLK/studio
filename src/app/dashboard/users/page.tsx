@@ -4,123 +4,63 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
-import type { UserRole } from '@/lib/types';
+import { hasAdminRole } from '@/lib/roles';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { UsersTable } from '@/components/users-table';
-import { ClientOnly } from '@/components/client-only';
-
-const hasAdminRole = (roles: UserRole | UserRole[] | undefined): boolean => {
-    if (!roles) return false;
-    if (Array.isArray(roles)) {
-        return roles.includes('Администратор');
-    }
-    return roles === 'Администратор';
-}
-
 
 export default function UsersPage() {
   const router = useRouter();
   const { currentUserData, isUserLoading } = useCurrentUserData();
 
   useEffect(() => {
-    // Ждем завершения загрузки данных пользователя
+    console.log('UsersPage auth state:', {
+      isUserLoading,
+      currentUserData,
+      roles: currentUserData?.roles,
+    });
+
     if (isUserLoading) {
-      return; 
+      console.log('Still loading user data...');
+      return;
     }
-    
-    // Если после загрузки у пользователя нет прав администратора, перенаправляем его
-    if (!hasAdminRole(currentUserData?.roles)) {
+    if (!currentUserData) {
+      console.log('No current user data found, redirecting...');
+      router.replace('/dashboard'); // Redirect if no user data after loading
+      return;
+    }
+
+    const isAdmin = hasAdminRole(currentUserData.roles);
+    console.log('isAdmin check result:', isAdmin);
+
+    if (!isAdmin) {
+      console.log('User is not admin, redirecting...');
       router.replace('/dashboard');
     }
-
   }, [isUserLoading, currentUserData, router]);
 
-  // Пока идет загрузка или если у пользователя нет прав (до срабатывания редиректа),
-  // показываем состояние загрузки, чтобы избежать мелькания контента.
-  if (isUserLoading || !hasAdminRole(currentUserData?.roles)) {
+  if (isUserLoading || !currentUserData) {
     return (
-        <>
-            <div className="flex items-center justify-between space-y-2">
-                <div className='grid gap-1.5'>
-                    <Skeleton className="h-8 w-48" />
-                    <Skeleton className="h-5 w-72" />
-                </div>
-            </div>
-            <Card className="mt-6">
-                <CardHeader>
-                    <Skeleton className="h-7 w-56" />
-                    <Skeleton className="h-4 w-72" />
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <TableHead>Пользователь</TableHead>
-                            <TableHead>Роли</TableHead>
-                            <TableHead className="hidden md:table-cell">Телефон</TableHead>
-                            <TableHead className="hidden md:table-cell">
-                            Филиалы
-                            </TableHead>
-                            <TableHead>Статус</TableHead>
-                            <TableHead>
-                                <span className="sr-only">Действия</span>
-                            </TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {Array.from({ length: 5 }).map((_, i) => (
-                            <TableRow key={i}>
-                                <TableCell className="flex items-center gap-3">
-                                <Skeleton className="h-9 w-9 rounded-full" />
-                                <div className="grid gap-1">
-                                    <Skeleton className="h-5 w-24" />
-                                    <Skeleton className="h-4 w-16" />
-                                </div>
-                                </TableCell>
-                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
-                                <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                                <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                                <TableCell><Skeleton className="h-8 w-8" /></TableCell>
-                            </TableRow>
-                        ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </>
+      <div className="p-4">
+        <Skeleton className="h-8 w-48 mb-4" />
+        <Skeleton className="h-4 w-72 mb-6" />
+        <Skeleton className="h-[400px] w-full" />
+      </div>
     );
   }
 
-  // Если все проверки пройдены, рендерим контент страницы для администратора
+  const isAdmin = hasAdminRole(currentUserData.roles);
+
+  if (!isAdmin) {
+    // This state is temporary before the useEffect triggers the redirect.
+    // Returning null is fine to prevent a flash of content.
+    return null;
+  }
+
+  // If we reach here, the user is an admin and loading is complete.
   return (
-    <>
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Пользователи</h1>
-          <p className="text-muted-foreground">
-            Управление пользователями системы.
-          </p>
-        </div>
-      </div>
-      <ClientOnly>
-        <UsersTable />
-      </ClientOnly>
-    </>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold">Страница пользователей (админ)</h1>
+      <p className="mt-2">Проверка прав прошла успешно.</p>
+      {/* Здесь будет UsersTable, когда мы убедимся, что редирект исправлен */}
+    </div>
   );
 }
