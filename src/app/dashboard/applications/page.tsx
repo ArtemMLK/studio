@@ -1,15 +1,55 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { FileText } from "lucide-react";
-import { useApplications } from "@/firebase/firestore/applications";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import {
+  FileText,
+  MoreHorizontal,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
+import { useApplications, updateApplicationStatus } from '@/firebase/firestore/applications';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
+import type { ApplicationStatus } from '@/lib/types';
 
 export default function ApplicationsPage() {
   const { data: applications, loading } = useApplications();
+  const { toast } = useToast();
+
+  const handleStatusChange = (
+    applicationId: string,
+    newStatus: ApplicationStatus
+  ) => {
+    updateApplicationStatus(applicationId, newStatus);
+    toast({
+      title: 'Статус обновлен',
+      description: `Заявка была успешно переведена в статус "${newStatus}".`,
+    });
+  };
 
   return (
     <>
@@ -28,28 +68,42 @@ export default function ApplicationsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-             <Table>
-               <TableHeader>
-                 <TableRow>
-                   <TableHead>Пользователь</TableHead>
-                   <TableHead>Лот</TableHead>
-                   <TableHead>Филиал</TableHead>
-                   <TableHead>Дата заявки</TableHead>
-                   <TableHead>Статус</TableHead>
-                 </TableRow>
-               </TableHeader>
-               <TableBody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Пользователь</TableHead>
+                  <TableHead>Лот</TableHead>
+                  <TableHead>Филиал</TableHead>
+                  <TableHead>Дата заявки</TableHead>
+                  <TableHead>Статус</TableHead>
+                  <TableHead>Действия</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-40" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-28" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-8 w-8" />
+                    </TableCell>
                   </TableRow>
                 ))}
-               </TableBody>
-             </Table>
+              </TableBody>
+            </Table>
           ) : applications && applications.length > 0 ? (
             <Table>
               <TableHeader>
@@ -59,6 +113,7 @@ export default function ApplicationsPage() {
                   <TableHead>Филиал</TableHead>
                   <TableHead>Дата заявки</TableHead>
                   <TableHead>Статус</TableHead>
+                  <TableHead>Действия</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -67,18 +122,61 @@ export default function ApplicationsPage() {
                     <TableCell className="font-medium">{app.userName}</TableCell>
                     <TableCell>{app.lotTitle}</TableCell>
                     <TableCell>{app.branchName}</TableCell>
-                    <TableCell>{new Date(app.applicationDate).toLocaleDateString('ru-RU')}</TableCell>
                     <TableCell>
-                       <Badge
+                      {new Date(app.applicationDate).toLocaleDateString('ru-RU')}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
                         variant="outline"
                         className={cn(
-                          app.status === 'Новая' && 'border-blue-500/50 text-blue-400',
-                          app.status === 'Принята' && 'border-green-500/50 text-green-400',
-                          app.status === 'Отклонена' && 'border-red-500/50 text-red-400',
+                          app.status === 'Новая' &&
+                            'border-blue-500/50 text-blue-400',
+                          app.status === 'Принята' &&
+                            'border-green-500/50 text-green-400',
+                          app.status === 'Отклонена' &&
+                            'border-red-500/50 text-red-400'
                         )}
                       >
                         {app.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            aria-haspopup="true"
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Меню</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Изменить статус</DropdownMenuLabel>
+                          {app.status !== 'Принята' && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleStatusChange(app.id, 'Принята')
+                              }
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Принять
+                            </DropdownMenuItem>
+                          )}
+                          {app.status !== 'Отклонена' && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() =>
+                                handleStatusChange(app.id, 'Отклонена')
+                              }
+                            >
+                              <XCircle className="mr-2 h-4 w-4" />
+                              Отклонить
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -98,5 +196,3 @@ export default function ApplicationsPage() {
     </>
   );
 }
-
-    

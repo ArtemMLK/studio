@@ -1,7 +1,7 @@
 'use client';
-import { collection, query, where, getDocs, Query, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, Query, addDoc, doc } from 'firebase/firestore';
 import { useFirestore, useMemoFirebase, useUser } from '..';
-import { Application, Lot, User } from '@/lib/types';
+import { Application, ApplicationStatus, Lot, User } from '@/lib/types';
 import {
   APPLICATIONS_COLLECTION,
   LOTS_COLLECTION,
@@ -13,7 +13,7 @@ import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 import { useBranches } from './branches';
 import { useUsers } from './users';
 import { useLots } from './lots';
-import { addDocumentNonBlocking } from '../non-blocking-updates';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '../non-blocking-updates';
 
 // Main hook to get applications, enriched with related data
 export function useApplications() {
@@ -78,7 +78,7 @@ export function useApplications() {
   return { data: applications, loading, error };
 }
 
-export async function addApplication(applicationData: Pick<Application, 'lotId' | 'userId' | 'branchId' | 'procurementId'>) {
+export function addApplication(applicationData: Pick<Application, 'lotId' | 'userId' | 'branchId' | 'procurementId'>) {
     const firestore = useFirestore();
     if (!firestore) {
         throw new Error('Firestore is not initialized');
@@ -91,5 +91,14 @@ export async function addApplication(applicationData: Pick<Application, 'lotId' 
         status: 'Новая',
     };
 
-    await addDocumentNonBlocking(applicationsCollection, newApplication);
+    addDocumentNonBlocking(applicationsCollection, newApplication);
+}
+
+export function updateApplicationStatus(applicationId: string, status: ApplicationStatus) {
+    const firestore = useFirestore();
+    if (!firestore) {
+        throw new Error('Firestore is not initialized');
+    }
+    const appDocRef = doc(firestore, APPLICATIONS_COLLECTION, applicationId);
+    updateDocumentNonBlocking(appDocRef, { status });
 }
