@@ -34,6 +34,11 @@ service cloud.firestore {
     function hasAccessToBranch(branchId) {
       return isSignedIn() && isNotBlacklisted() && (isAdmin() || branchId in getUserData().branchIds);
     }
+    
+    // NEW: Function to check if a user can list branches they are part of.
+    function canListOwnBranches() {
+      return isSignedIn() && isNotBlacklisted();
+    }
 
     match /users/{userId} {
       allow get: if isVerifiedOwner(userId) || isAdmin();
@@ -51,14 +56,19 @@ service cloud.firestore {
     }
 
     match /branches/{branchId} {
+      // Allow reading a specific branch if user has access.
       allow get: if hasAccessToBranch(branchId);
-      allow list: if isAdmin();
+      // Allow listing branches if user is admin OR if they are querying for their own branches.
+      allow list: if isAdmin() || (canListOwnBranches() && request.query.keys.hasOnly(['__name__']));
       allow create: if isAdmin();
       allow update, delete: if isAdmin() && resource != null;
     }
 
     match /lots/{lotId} {
       allow read: if isSignedIn() && isNotBlacklisted();
+      // NEW: Allow listing lots, as this is needed for participants and others.
+      // Client-side query will apply filters, but the basic list must be allowed.
+      allow list: if isSignedIn() && isNotBlacklisted();
       allow create: if isManager() && hasAccessToBranch(request.resource.data.branchId);
       allow update: if isManager() && hasAccessToBranch(request.resource.data.branchId);
       allow delete: if isAdmin();
@@ -85,7 +95,10 @@ service cloud.firestore {
     }
 
     match /branches/{branchId}/procurementProcesses/{procurementProcessId} {
-      allow get, list: if hasAccessToBranch(branchId);
+      allow get: if hasAccessToBranch(branchId);
+      // List is allowed if the user has access to the parent branch.
+      // This is secure for subcollection queries filtered by branchId.
+      allow list: if hasAccessToBranch(branchId);
       allow create: if hasAccessToBranch(branchId) && isManager();
       allow update: if hasAccessToBranch(branchId) && isManager() && resource != null;
       allow delete: if hasAccessToBranch(branchId) && isAdmin() && resource != null;

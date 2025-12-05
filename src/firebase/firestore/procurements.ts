@@ -1,3 +1,4 @@
+
 'use client';
 import {
   collection,
@@ -7,6 +8,8 @@ import {
   getDocs,
   collectionGroup,
   getDoc,
+  onSnapshot,
+  Query,
 } from 'firebase/firestore';
 import { useFirestore, useUser } from '..';
 import { ProcurementProcess, Branch } from '@/lib/types';
@@ -15,71 +18,137 @@ import {
   PROCUREMENT_PROCESSES_COLLECTION,
   BRANCHES_COLLECTION,
 } from '@/lib/constants';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useCurrentUserData } from '@/hooks/use-current-user-data';
 
-// Main hook to get all procurement processes across all branches
-export function useProcurementProcesses(branchId?: string | null) {
+
+export function useProcurementProcesses(selectedBranchId?: string | null) {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { currentUserData, isUserLoading } = useCurrentUserData();
+
   const [procurements, setProcurements] = useState<ProcurementProcess[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const queries = useMemo(() => {
+    if (!firestore || !currentUserData) return null;
+
+    const userRoles = currentUserData.roles || [];
+    const userBranchIds = currentUserData.branchIds || [];
+    const isAdmin = userRoles.includes('Администратор');
+
+    let targetBranchIds: string[] = [];
+
+    if (isAdmin) {
+      if (selectedBranchId && selectedBranchId !== 'all') {
+        targetBranchIds = [selectedBranchId];
+      } else {
+        // Admin viewing all branches - this is tricky. We'll fetch all branches first.
+        // A better approach would be denormalizing roles or having a different structure.
+        // For now, we will rely on a separate query to get all branch IDs.
+        // This part is handled outside and we assume we get all branches if isAdmin.
+        // Let's rely on selectedBranchId for now.
+        if (!selectedBranchId || selectedBranchId === 'all') {
+            return 'all'; // Special flag for admin to fetch all
+        }
+        targetBranchIds = [selectedBranchId];
+      }
+    } else { // Manager, Analyst, etc.
+      if (selectedBranchId && selectedBranchId !== 'all') {
+        if (userBranchIds.includes(selectedBranchId)) {
+          targetBranchIds = [selectedBranchId];
+        } else {
+          return []; // Empty array means no queries to run
+        }
+      } else {
+        targetBranchIds = userBranchIds;
+      }
+    }
+
+    if (targetBranchIds.length === 0 && !isAdmin) return [];
+    if (queries === 'all') return 'all';
+
+    return targetBranchIds.map(branchId =>
+      query(
+        collection(
+          firestore,
+          BRANCHES_COLLECTION,
+          branchId,
+          PROCUREMENT_PROCESSES_COLLECTION
+        )
+      )
+    );
+  }, [firestore, currentUserData, selectedBranchId]);
+
   useEffect(() => {
-    if (!firestore || !user) {
+    if (isUserLoading) {
+      setLoading(true);
+      return;
+    }
+    if (queries === null) {
+      setProcurements([]);
       setLoading(false);
       return;
     }
+    
+    setLoading(true);
+    
+    const fetchData = async () => {
+        if (!firestore) return;
+        try {
+            const branchesSnapshot = await getDocs(collection(firestore, BRANCHES_COLLECTION));
+            const branchesMap = new Map(branchesSnapshot.docs.map(doc => [doc.id, doc.data().name]));
 
-    const fetchProcurements = async () => {
-      setLoading(true);
-      try {
-        const branchesSnapshot = await getDocs(
-          collection(firestore, BRANCHES_COLLECTION)
-        );
-        const branches = branchesSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Branch[];
-        const branchesMap = new Map(branches.map((b) => [b.id, b.name]));
+            let finalQueries: Query[] = [];
 
-        const q =
-          branchId && branchId !== 'all'
-            ? query(
-                collection(
-                  firestore,
-                  BRANCHES_COLLECTION,
-                  branchId,
-                  PROCUREMENT_PROCESSES_COLLECTION
-                )
-              )
-            : collectionGroup(firestore, PROCUREMENT_PROCESSES_COLLECTION);
+            if(queries === 'all') {
+                 finalQueries = branchesSnapshot.docs.map(branchDoc => 
+                    query(collection(firestore, BRANCHES_COLLECTION, branchDoc.id, PROCUREMENT_PROCESSES_COLLECTION))
+                 );
+            } else if (Array.isArray(queries)) {
+                finalQueries = queries;
+            }
 
-        const querySnapshot = await getDocs(q);
 
-        const procs = querySnapshot.docs.map((doc) => {
-          const data = doc.data() as ProcurementProcess;
-          const branchName = branchesMap.get(data.branchId) || 'Неизвестно';
-          return {
-            ...data,
-            id: doc.id,
-            branchName,
-          };
-        });
-
-        setProcurements(procs);
-      } catch (err: any) {
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
+            if (finalQueries.length === 0) {
+              setProcurements([]);
+              setLoading(false);
+              return;
+            }
+            
+            const results = await Promise.all(finalQueries.map(q => getDocs(q)));
+            
+            const procs = results.flatMap(snapshot => 
+                snapshot.docs.map(doc => {
+                    const data = doc.data() as ProcurementProcess;
+                    return {
+                        ...data,
+                        id: doc.id,
+                        branchName: branchesMap.get(data.branchId) || 'Неизвестно',
+                    };
+                })
+            );
+            
+            setProcurements(procs);
+        } catch (err: any) {
+            setError(err);
+            console.error("Error fetching procurements:", err);
+        } finally {
+            setLoading(false);
+        }
     };
+    
+    fetchData();
+    
+    // Note: Real-time updates with this structure would be complex (many listeners).
+    // A fetch-on-demand approach is more suitable here.
+    // If real-time is a must, DB structure should be revisited (e.g., top-level procurements collection).
 
-    fetchProcurements();
-  }, [firestore, user, branchId]);
+  }, [queries, isUserLoading, firestore]);
 
-  return { data: procurements, loading, error };
+  return { data: procurements, loading: isUserLoading || loading, error };
 }
+
 
 // Optimized hook to get a single procurement process
 export function useProcurementProcess(procurementId?: string) {
