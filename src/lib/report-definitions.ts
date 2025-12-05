@@ -38,7 +38,7 @@ export const reportEntities: Record<ReportEntityKey, ReportEntity> = {
     fields: [
       { key: 'userName', label: 'Пользователь' },
       { key: 'lotTitle', label: 'Лот' },
-      { key 'status', label: 'Статус' },
+      { key: 'status', label: 'Статус' },
       { key: 'applicationDate', label: 'Дата заявки' },
       { key: 'branchName', label: 'Филиал' },
     ],
