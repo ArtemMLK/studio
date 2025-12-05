@@ -2,8 +2,9 @@ import { ClientOnly } from '@/components/client-only';
 import { UsersTable } from '@/components/users-table';
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
 import { redirect } from 'next/navigation';
+import type { UserRole } from '@/lib/types';
 
-const hasAdminRole = (roles: any): boolean => {
+const hasAdminRole = (roles: UserRole | UserRole[] | undefined): boolean => {
     if (!roles) return false;
     if (Array.isArray(roles)) {
         return roles.includes('Администратор');
