@@ -1,8 +1,8 @@
 import type { UserRole } from '@/lib/types';
 
 /**
- * A robust role check that handles roles being a string or an array.
- * @param userRoles - The roles from the user document (can be string or array).
+ * A robust role check that handles roles being a string or an array and is case-insensitive.
+ * @param userRoles - The roles from the user document.
  * @returns boolean - True if the user has an Admin role.
  */
 export const hasAdminRole = (
@@ -10,11 +10,13 @@ export const hasAdminRole = (
 ): boolean => {
   if (!userRoles) return false;
 
-  // If userRoles is an array, check if 'Администратор' is included.
+  const adminRoles = ['администратор', 'admin'];
+
   if (Array.isArray(userRoles)) {
-    return userRoles.includes('Администратор');
+    // Check if any role in the array is an admin role (case-insensitive)
+    return userRoles.some(role => adminRoles.includes(role.toLowerCase()));
   }
 
-  // If userRoles is a single string, check if it is 'Администратор'.
-  return userRoles === 'Администратор';
+  // Check if the single role string is an admin role (case-insensitive)
+  return adminRoles.includes((userRoles as string).toLowerCase());
 };

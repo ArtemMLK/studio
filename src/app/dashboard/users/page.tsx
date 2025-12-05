@@ -13,22 +13,22 @@ export default function UsersPage() {
   const { currentUserData, isUserLoading } = useCurrentUserData();
 
   useEffect(() => {
-    // 1. Ничего не делаем, пока данные пользователя загружаются
+    // 1. We do nothing while the user data is loading.
     if (isUserLoading) {
       return;
     }
     
-    // 2. После загрузки, если данных нет или у пользователя нет роли админа,
-    // выполняем перенаправление.
-    const isAdmin = currentUserData ? hasAdminRole(currentUserData.roles) : false;
+    // 2. After loading, if there's no data or the user is not an admin,
+    // we perform a redirect.
+    const isAdmin = hasAdminRole(currentUserData?.roles);
     if (!isAdmin) {
-       console.log("Redirecting: User is not an admin.");
+       console.log("Redirecting: User is not an admin after loading has finished.");
        router.replace('/dashboard');
     }
   }, [isUserLoading, currentUserData, router]);
 
-  // Пока идет загрузка, или если пользователь не админ (до срабатывания useEffect),
-  // показываем скелетон. Это предотвращает мелькание контента.
+  // While loading, or if the user is not an admin (before useEffect kicks in),
+  // show a skeleton. This prevents content flickering.
   const isAdmin = currentUserData ? hasAdminRole(currentUserData.roles) : false;
   if (isUserLoading || !isAdmin) {
     return (
@@ -47,6 +47,6 @@ export default function UsersPage() {
     );
   }
 
-  // 3. Если загрузка завершена и пользователь - админ, показываем таблицу
+  // 3. If loading is complete and the user is an admin, show the table.
   return <UsersTable />;
 }
