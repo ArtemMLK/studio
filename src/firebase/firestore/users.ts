@@ -71,5 +71,11 @@ export async function deleteUser(userId: string) {
     // We will await this because we want to show feedback to the user
     // In a real app, you would also need to delete the user from Firebase Auth
     // which is a backend operation.
-    await deleteDoc(userDocRef);
+    try {
+        await deleteDoc(userDocRef);
+    } catch (error) {
+        console.error("Error deleting user document:", error);
+        // We can optionally re-throw or handle it specifically for the UI
+        throw error;
+    }
 }

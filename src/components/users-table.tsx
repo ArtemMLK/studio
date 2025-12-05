@@ -146,9 +146,8 @@ export function UsersTable() {
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
     try {
-      // In a real app, you would also need to delete the user from Firebase Auth
+      // In a real app, you would also need to delete the user from Firebase Auth.
       // This is a backend operation and requires admin privileges.
-      // For this prototype, we only delete the Firestore document.
       await deleteUser(userToDelete.id);
       toast({
         title: 'Пользователь удален',
@@ -158,7 +157,7 @@ export function UsersTable() {
       toast({
         variant: 'destructive',
         title: 'Ошибка удаления пользователя',
-        description: error.message,
+        description: 'Не удалось удалить документ пользователя. Убедитесь, что у вас есть права, и проверьте правила безопасности.',
       });
     } finally {
       setUserToDelete(null);
@@ -350,9 +349,9 @@ export function UsersTable() {
           <AlertDialogHeader>
             <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
             <AlertDialogDescription>
-              Это действие необратимо. Пользователь{' '}
+              Это действие необратимо. Документ пользователя{' '}
               <span className="font-bold">{userToDelete?.name} {userToDelete?.surname}</span> будет
-              навсегда удален из системы, включая его данные для входа.
+              навсегда удален из базы данных. Аутентификационные данные пользователя останутся, но его можно заблокировать.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -369,5 +368,3 @@ export function UsersTable() {
     </>
   );
 }
-
-    
