@@ -31,9 +31,12 @@ import { cn } from '@/lib/utils';
 import { addBranch, useBranches } from '@/firebase/firestore/branches';
 import { Branch } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useBranchSelection } from '@/hooks/use-branch-selection';
 
 export default function BranchesPage() {
-  const { data: branches, loading } = useBranches();
+  const { selectedBranchId } = useBranchSelection();
+  const { data: branches, loading } = useBranches(false, selectedBranchId);
+
 
   const handleBranchAdded = (newBranchData: Omit<Branch, 'id' | 'userCount' | 'status'>) => {
     const newBranch: Omit<Branch, 'id'> = {

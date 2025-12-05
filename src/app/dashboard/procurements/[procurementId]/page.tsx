@@ -93,6 +93,7 @@ export default function ProcurementDetailsPage() {
         </div>
         <AddLotDialog
             procurementId={procurementId}
+            branchId={procurement.branchId}
             onLotAdded={handleLotAdded}
             triggerButton={
               <Button size="sm" className="ml-auto gap-1">
@@ -183,6 +184,7 @@ export default function ProcurementDetailsPage() {
                     <div className="mt-4">
                          <AddLotDialog
                             procurementId={procurementId}
+                            branchId={procurement.branchId}
                             onLotAdded={handleLotAdded}
                          />
                     </div>

@@ -16,9 +16,11 @@ import type { Lot } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useLots } from '@/firebase/firestore/lots';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useBranchSelection } from '@/hooks/use-branch-selection';
 
 export default function LotsPage() {
-  const { data: lots, loading } = useLots();
+  const { selectedBranchId } = useBranchSelection();
+  const { data: lots, loading } = useLots(undefined, selectedBranchId);
 
   return (
     <>

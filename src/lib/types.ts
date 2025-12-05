@@ -20,6 +20,7 @@ export type Lot = {
   id: string;
   title: string;
   procurementId: string;
+  branchId: string; // Added to filter lots by branch
   plan: number;
   price: number;
   currency: string;

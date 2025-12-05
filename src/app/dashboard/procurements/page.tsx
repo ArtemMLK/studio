@@ -27,9 +27,11 @@ import {
 import { AddProcurementDialog } from '@/components/add-procurement-dialog';
 import type { ProcurementProcess } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import { useBranchSelection } from '@/hooks/use-branch-selection';
 
 export default function ProcurementsPage() {
-  const { data: procurements, loading } = useProcurementProcesses();
+  const { selectedBranchId } = useBranchSelection();
+  const { data: procurements, loading } = useProcurementProcesses(selectedBranchId);
   const router = useRouter();
 
   const handleProcurementAdded = (
@@ -69,7 +71,7 @@ export default function ProcurementsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading && procurements?.length === 0 ? (
+          {loading ? (
             <Table>
               <TableHeader>
                 <TableRow>

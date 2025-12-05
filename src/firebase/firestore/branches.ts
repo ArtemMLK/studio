@@ -1,27 +1,34 @@
 'use client';
-import {
-  collection,
-} from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '..';
 import { Branch } from '@/lib/types';
 import { addDocumentNonBlocking } from '../non-blocking-updates';
 import { BRANCHES_COLLECTION } from '@/lib/constants';
 
-
-export function useBranches() {
+export function useBranches(all: boolean = false, branchId?: string) {
   const firestore = useFirestore();
-  const { user } = useUser(); // Get the authenticated user
+  const { user } = useUser();
 
-  const branchesCollection = useMemoFirebase(() => {
-    // Only return the collection if the user is authenticated
+  const branchesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, BRANCHES_COLLECTION);
-  }, [firestore, user]);
 
-  const { data, isLoading, error } = useCollection<Branch>(branchesCollection);
+    let q = collection(firestore, BRANCHES_COLLECTION);
 
-  // The hook's loading state should reflect the auth state as well.
-  // It's loading if we are waiting for the user OR if we are waiting for firestore data.
+    if (all) {
+      return q; // Return all branches if 'all' is true
+    }
+
+    if (branchId && branchId !== 'all') {
+      return query(q, where('__name__', '==', branchId));
+    }
+    
+    // In a real app with full RBAC, you'd filter by user's assigned branches.
+    // For now, if no specific branch is requested, we show all.
+    return q;
+  }, [firestore, user, all, branchId]);
+
+  const { data, isLoading, error } = useCollection<Branch>(branchesQuery);
+
   return { data: data || [], loading: !user || isLoading, error };
 }
 

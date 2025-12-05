@@ -8,45 +8,21 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ConsentDialog } from '@/components/consent-dialog';
-import {
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-} from 'recharts';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { useProcurementProcesses } from '@/firebase/firestore/procurements';
 import { useLots } from '@/firebase/firestore/lots';
-import { Box, FileClock, LineChart, ShoppingBasket } from 'lucide-react';
+import { Box, FileClock, ShoppingBasket } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const chartData = [
-  { month: 'Январь', receipts: 186, allocations: 80 },
-  { month: 'Февраль', receipts: 305, allocations: 200 },
-  { month: 'Март', receipts: 237, allocations: 120 },
-  { month: 'Апрель', receipts: 273, allocations: 190 },
-  { month: 'Май', receipts: 209, allocations: 130 },
-  { month: 'Июнь', receipts: 214, allocations: 140 },
-];
-
-const chartConfig = {
-  receipts: {
-    label: 'Поступления',
-    color: 'hsl(var(--chart-2))',
-  },
-  allocations: {
-    label: 'Выдачи',
-    color: 'hsl(var(--chart-5))',
-  },
-};
+import { useBranchSelection } from '@/hooks/use-branch-selection';
 
 export default function Dashboard() {
+  const { selectedBranchId } = useBranchSelection();
+
   const { data: procurements, loading: procurementsLoading } =
-    useProcurementProcesses();
-  const { data: lots, loading: lotsLoading } = useLots();
+    useProcurementProcesses(selectedBranchId);
+  const { data: lots, loading: lotsLoading } = useLots(
+    undefined,
+    selectedBranchId
+  );
 
   const activeProcurements =
     procurements?.filter((p) => p.status === 'Активен').length || 0;
@@ -77,8 +53,6 @@ export default function Dashboard() {
     },
   ];
 
-  const loading = procurementsLoading || lotsLoading;
-
   return (
     <>
       <ConsentDialog />
@@ -103,55 +77,6 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
-      {/* <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 bg-card/50 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle>Обзор поступлений и выдач</CardTitle>
-            <CardDescription>Динамика за последние 6 месяцев</CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={chartData}
-                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                >
-                  <XAxis
-                    dataKey="month"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `${value / 1000}K`}
-                  />
-                  <Tooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="dot" />}
-                    wrapperStyle={{ outline: 'none' }}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="receipts"
-                    fill="hsl(var(--chart-2))"
-                    radius={4}
-                  />
-                  <Bar
-                    dataKey="allocations"
-                    fill="hsl(var(--chart-5))"
-                    radius={4}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div> */}
     </>
   );
 }

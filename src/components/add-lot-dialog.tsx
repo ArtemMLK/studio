@@ -40,12 +40,14 @@ import { Textarea } from './ui/textarea';
 interface AddLotDialogProps {
   onLotAdded: (newLot: Omit<Lot, 'id' | 'status' | 'imageHint'>) => void;
   procurementId: string;
+  branchId: string; // Need branchId to associate the lot
   triggerButton?: React.ReactNode;
 }
 
 const formSchema = z.object({
   title: z.string().min(5, 'Название должно содержать не менее 5 символов.'),
   procurementId: z.string(),
+  branchId: z.string(),
   plan: z.coerce.number().positive('План должен быть положительным числом.'),
   price: z.coerce.number().positive('Цена должна быть положительным числом.'),
   deadline: z.date({
@@ -55,7 +57,7 @@ const formSchema = z.object({
   currency: z.string().default('₽'),
 });
 
-export function AddLotDialog({ onLotAdded, procurementId, triggerButton }: AddLotDialogProps) {
+export function AddLotDialog({ onLotAdded, procurementId, branchId, triggerButton }: AddLotDialogProps) {
   const [open, setOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -63,6 +65,7 @@ export function AddLotDialog({ onLotAdded, procurementId, triggerButton }: AddLo
     defaultValues: {
       title: '',
       procurementId: procurementId,
+      branchId: branchId,
       plan: 1,
       price: 0,
       imageUrl: '',
@@ -70,10 +73,13 @@ export function AddLotDialog({ onLotAdded, procurementId, triggerButton }: AddLo
     },
   });
 
-  // Keep procurementId in sync if it changes
+  // Keep procurementId and branchId in sync if they change
   form.watch((values, { name }) => {
     if (name !== 'procurementId' && values.procurementId !== procurementId) {
       form.setValue('procurementId', procurementId);
+    }
+    if (name !== 'branchId' && values.branchId !== branchId) {
+        form.setValue('branchId', branchId);
     }
   });
 
@@ -214,6 +220,19 @@ export function AddLotDialog({ onLotAdded, procurementId, triggerButton }: AddLo
                 render={({ field }) => (
                   <FormItem className="hidden">
                     <FormLabel>ID Закупки</FormLabel>
+                    <FormControl>
+                      <Input {...field} readOnly/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="branchId"
+                render={({ field }) => (
+                  <FormItem className="hidden">
+                    <FormLabel>ID Филиала</FormLabel>
                     <FormControl>
                       <Input {...field} readOnly/>
                     </FormControl>

@@ -17,7 +17,7 @@ import {
 import { useEffect, useState } from 'react';
 
 // Main hook to get all procurement processes across all branches
-export function useProcurementProcesses() {
+export function useProcurementProcesses(branchId?: string | null) {
   const firestore = useFirestore();
   const { user } = useUser();
   const [procurements, setProcurements] = useState<ProcurementProcess[]>([]);
@@ -42,7 +42,18 @@ export function useProcurementProcesses() {
         })) as Branch[];
         const branchesMap = new Map(branches.map((b) => [b.id, b.name]));
 
-        const q = collectionGroup(firestore, PROCUREMENT_PROCESSES_COLLECTION);
+        const q =
+          branchId && branchId !== 'all'
+            ? query(
+                collection(
+                  firestore,
+                  BRANCHES_COLLECTION,
+                  branchId,
+                  PROCUREMENT_PROCESSES_COLLECTION
+                )
+              )
+            : collectionGroup(firestore, PROCUREMENT_PROCESSES_COLLECTION);
+
         const querySnapshot = await getDocs(q);
 
         const procs = querySnapshot.docs.map((doc) => {
@@ -64,7 +75,7 @@ export function useProcurementProcesses() {
     };
 
     fetchProcurements();
-  }, [firestore, user]);
+  }, [firestore, user, branchId]);
 
   return { data: procurements, loading, error };
 }
