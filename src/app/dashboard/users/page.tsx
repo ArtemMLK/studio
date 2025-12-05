@@ -6,6 +6,19 @@ import { useCurrentUserData } from '@/hooks/use-current-user-data';
 import { redirect } from 'next/navigation';
 import type { UserRole } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const hasAdminRole = (roles: UserRole | UserRole[] | undefined): boolean => {
     if (!roles) return false;
