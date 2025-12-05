@@ -26,7 +26,7 @@ export function useUsers() {
 
   // The hook's loading state should reflect the auth state as well.
   // It's loading if we are waiting for the user OR if we are waiting for firestore data.
-  return { data: data, isLoading: !user || isLoading, error };
+  return { data: data || [], isLoading: !user || isLoading, error };
 }
 
 // Note: The 'id' is the Firebase Auth UID.

@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { UserNav } from '@/components/user-nav';
+import { UserNav } from '@/user-nav';
 
 export function DashboardHeader() {
   const [isClient, setIsClient] = useState(false);
