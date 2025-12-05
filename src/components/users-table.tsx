@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 
 import { AddUserDialog } from '@/components/add-user-dialog';
+import { EditUserDialog } from '@/components/edit-user-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,7 @@ import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
+import { buttonVariants } from './ui/button';
 
 export function UsersTable() {
   const { data: users, isLoading: usersLoading } = useUsers();
@@ -66,6 +68,8 @@ export function UsersTable() {
     password;
   } | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
 
   const auth = useAuth();
   const { toast } = useToast();
@@ -108,6 +112,13 @@ export function UsersTable() {
       });
     }
   };
+
+  const handleUserUpdated = (userId: string, updatedData: Partial<User>) => {
+    updateUser(userId, updatedData);
+    setEditingUser(null);
+    toast({ title: 'Пользователь обновлен', description: `Данные пользователя успешно обновлены.` });
+  };
+
 
   const handleResetPassword = (email: string) => {
      if (!auth) return;
@@ -157,6 +168,10 @@ export function UsersTable() {
 
   const toggleUserBlacklist = (userId: string, isBlacklisted: boolean) => {
     updateUser(userId, { blacklisted: !isBlacklisted });
+     toast({
+        title: 'Статус пользователя обновлен',
+        description: `Пользователь был ${!isBlacklisted ? 'заблокирован' : 'разблокирован'}.`
+    });
   };
 
   return (
@@ -280,7 +295,9 @@ export function UsersTable() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Действия</DropdownMenuLabel>
-                            <DropdownMenuItem>Редактировать</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setEditingUser(user)}>
+                              Редактировать
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleResetPassword(user.login)}
                             >
@@ -288,7 +305,7 @@ export function UsersTable() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
+                              className={cn(user.blacklisted ? "focus:text-green-400" : "focus:text-yellow-400")}
                               onClick={() => toggleUserBlacklist(user.id, user.blacklisted)}
                             >
                               {user.blacklisted
@@ -312,6 +329,15 @@ export function UsersTable() {
           </Table>
         </CardContent>
       </Card>
+
+      {editingUser && canManage && (
+        <EditUserDialog
+          user={editingUser}
+          onUserUpdated={handleUserUpdated}
+          onOpenChange={(isOpen) => !isOpen && setEditingUser(null)}
+        />
+      )}
+
       {credentials && (
         <NewUserCredentialsDialog
           login={credentials.login}
