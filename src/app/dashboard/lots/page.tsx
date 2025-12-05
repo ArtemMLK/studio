@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { Search } from 'lucide-react';
+import { Search, PlusCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,10 +17,38 @@ import { cn } from '@/lib/utils';
 import { useLots } from '@/firebase/firestore/lots';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
+import { useUser } from '@/firebase';
+import { addApplication } from '@/firebase/firestore/applications';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LotsPage() {
   const { selectedBranchId } = useBranchSelection();
   const { data: lots, loading } = useLots(undefined, selectedBranchId);
+  const { user } = useUser();
+  const { toast } = useToast();
+
+  const handleApply = (lot: Lot) => {
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Вы должны быть авторизованы, чтобы подать заявку.',
+      });
+      return;
+    }
+
+    addApplication({
+      lotId: lot.id,
+      userId: user.uid,
+      branchId: lot.branchId,
+      procurementId: lot.procurementId,
+    });
+
+    toast({
+      title: 'Заявка подана',
+      description: `Ваша заявка на лот "${lot.title}" успешно отправлена.`,
+    });
+  };
 
   return (
     <>
@@ -93,8 +121,14 @@ export default function LotsPage() {
                   <p className="text-xs text-muted-foreground">
                     До: {lot.deadline}
                   </p>
-                  <Button variant="outline" size="sm">
-                    Подробнее
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApply(lot)}
+                    disabled={!user || lot.status !== 'Активен'}
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Подать заявку
                   </Button>
                 </CardFooter>
               </Card>

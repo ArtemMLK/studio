@@ -61,7 +61,7 @@ service cloud.firestore {
     match /applications/{applicationId} {
       allow read: if isSignedIn() && isNotBlacklisted() && (hasAccessToBranch(resource.data.branchId) || isOwner(resource.data.userId));
       allow list: if isSignedIn() && isNotBlacklisted(); // Query will be filtered on client
-      allow create: if isSignedIn() && isNotBlacklisted() && request.resource.data.userId == request.auth.uid;
+      allow create: if isVerifiedOwner(request.resource.data.userId);
       allow update: if isSignedIn() && isNotBlacklisted() && hasAccessToBranch(resource.data.branchId);
       allow delete: if isAdmin();
     }
