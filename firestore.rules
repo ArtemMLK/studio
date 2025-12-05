@@ -20,11 +20,18 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && 'roles' in getUserData() && getUserData().roles.hasAny(['admin', 'Администратор']);
+      // Check for 'roles' field existence before trying to access it.
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             'roles' in getUserData() &&
+             getUserData().roles.hasAny(['admin', 'Администратор']);
     }
 
     function isManager() {
-      return isSignedIn() && 'roles' in getUserData() && getUserData().roles.hasAny(['admin', 'Администратор', 'Менеджер']);
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             'roles' in getUserData() &&
+             getUserData().roles.hasAny(['admin', 'Администратор', 'Менеджер']);
     }
 
     function isVerifiedOwner(userId) {
@@ -32,16 +39,23 @@ service cloud.firestore {
     }
     
     function hasAccessToBranch(branchId) {
-      return isSignedIn() && isNotBlacklisted() && (isAdmin() || branchId in getUserData().branchIds);
+      // Check for 'branchIds' field existence before trying to access it.
+      return isSignedIn() &&
+             isNotBlacklisted() &&
+             (isAdmin() ||
+               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                'branchIds' in getUserData() &&
+                branchId in getUserData().branchIds)
+             );
     }
     
-    // NEW: Function to check if a user can list branches they are part of.
     function canListOwnBranches() {
       return isSignedIn() && isNotBlacklisted();
     }
 
     match /users/{userId} {
-      allow get: if isVerifiedOwner(userId) || isAdmin();
+      // Any authenticated user can read their own document. Admins can read any.
+      allow get: if (request.auth != null && request.auth.uid == userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if request.auth.uid == userId;
       allow update: if (isVerifiedOwner(userId) || isAdmin()) && resource != null;
@@ -56,9 +70,7 @@ service cloud.firestore {
     }
 
     match /branches/{branchId} {
-      // Allow reading a specific branch if user has access.
       allow get: if hasAccessToBranch(branchId);
-      // Allow listing branches if user is admin OR if they are querying for their own branches.
       allow list: if isAdmin() || (canListOwnBranches() && request.query.keys.hasOnly(['__name__']));
       allow create: if isAdmin();
       allow update, delete: if isAdmin() && resource != null;
@@ -66,8 +78,6 @@ service cloud.firestore {
 
     match /lots/{lotId} {
       allow read: if isSignedIn() && isNotBlacklisted();
-      // NEW: Allow listing lots, as this is needed for participants and others.
-      // Client-side query will apply filters, but the basic list must be allowed.
       allow list: if isSignedIn() && isNotBlacklisted();
       allow create: if isManager() && hasAccessToBranch(request.resource.data.branchId);
       allow update: if isManager() && hasAccessToBranch(request.resource.data.branchId);
@@ -76,7 +86,7 @@ service cloud.firestore {
 
     match /applications/{applicationId} {
       allow read: if isSignedIn() && isNotBlacklisted() && (hasAccessToBranch(resource.data.branchId) || isOwner(resource.data.userId));
-      allow list: if isSignedIn() && isNotBlacklisted(); // Query will be filtered on client
+      allow list: if isSignedIn() && isNotBlacklisted();
       allow create: if isVerifiedOwner(request.resource.data.userId);
       allow update: if isSignedIn() && isNotBlacklisted() && hasAccessToBranch(resource.data.branchId);
       allow delete: if isAdmin();
@@ -95,10 +105,7 @@ service cloud.firestore {
     }
 
     match /branches/{branchId}/procurementProcesses/{procurementProcessId} {
-      allow get: if hasAccessToBranch(branchId);
-      // List is allowed if the user has access to the parent branch.
-      // This is secure for subcollection queries filtered by branchId.
-      allow list: if hasAccessToBranch(branchId);
+      allow get, list: if hasAccessToBranch(branchId);
       allow create: if hasAccessToBranch(branchId) && isManager();
       allow update: if hasAccessToBranch(branchId) && isManager() && resource != null;
       allow delete: if hasAccessToBranch(branchId) && isAdmin() && resource != null;
