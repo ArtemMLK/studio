@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useCurrentUserData } from "@/hooks/use-current-user-data";
 import { hasAdminRole } from "@/lib/roles";
 import { UsersTable } from "@/components/users-table";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 
 
@@ -64,33 +62,24 @@ function UsersPageSkeleton() {
 
 
 export default function UsersPage() {
-  const router = useRouter();
   const { currentUserData, isUserLoading } = useCurrentUserData();
 
-  useEffect(() => {
-    // Ждем окончания загрузки данных.
-    if (isUserLoading) {
-      return;
-    }
-
-    // Если после загрузки данных нет или пользователь не админ, перенаправляем.
-    if (!currentUserData || !hasAdminRole(currentUserData.roles)) {
-      router.replace("/dashboard");
-    }
-  }, [isUserLoading, currentUserData, router]);
-
-
-  // Пока идет загрузка или если данные еще не пришли, показываем скелет.
   if (isUserLoading || !currentUserData) {
     return <UsersPageSkeleton />;
   }
 
-  // Если у пользователя нет роли админа (на случай, если редирект еще не сработал),
-  // ничего не показываем, чтобы избежать мелькания контента.
-  if (!hasAdminRole(currentUserData.roles)) {
-    return null;
+  const isAdmin = hasAdminRole(currentUserData.roles);
+
+  if (!isAdmin) {
+    return (
+        <div className="flex h-[50vh] flex-col items-center justify-center text-center">
+            <h1 className="text-2xl font-bold">Доступ запрещен</h1>
+            <p className="mt-2 text-muted-foreground">
+                У вас нет прав для просмотра этой страницы.
+            </p>
+        </div>
+    );
   }
-  
-  // Если все проверки пройдены, показываем полноценный компонент таблицы пользователей.
+
   return <UsersTable />;
 }
