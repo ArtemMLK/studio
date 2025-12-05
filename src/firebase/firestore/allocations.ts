@@ -1,13 +1,9 @@
 'use client';
-import { collection, query, where, getDocs, Query, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, Query } from 'firebase/firestore';
 import { useFirestore, useUser } from '..';
-import { Allocation, Application, User, Lot, Branch } from '@/lib/types';
+import { Allocation } from '@/lib/types';
 import {
   ALLOCATIONS_COLLECTION,
-  APPLICATIONS_COLLECTION,
-  USERS_COLLECTION,
-  LOTS_COLLECTION,
-  BRANCHES_COLLECTION,
 } from '@/lib/constants';
 import { useEffect, useState } from 'react';
 import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
@@ -16,12 +12,14 @@ import { useApplications } from './applications';
 import { useUsers } from './users';
 import { useLots } from './lots';
 import { useBranches } from './branches';
+import { useCurrentUserData } from '@/hooks/use-current-user-data';
 
 
 // Main hook to get allocations, enriched with related data
 export function useAllocations() {
   const firestore = useFirestore();
   const { user: authUser } = useUser();
+  const { currentUserData, isUserLoading: isCurrentUserDataLoading } = useCurrentUserData();
   const { selectedBranchId } = useBranchSelection();
 
   // Fetch all necessary data for enrichment
@@ -35,12 +33,11 @@ export function useAllocations() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!firestore || !authUser) {
-      if (!authUser && !loading) setLoading(false);
+    if (!firestore || !authUser || isCurrentUserDataLoading) {
+      if (!isCurrentUserDataLoading && !loading) setLoading(false);
       return;
     }
 
-    // Wait until all enrichment data is loaded
     if (applicationsLoading || usersLoading || lotsLoading || branchesLoading) {
       return;
     }
@@ -48,34 +45,59 @@ export function useAllocations() {
     const fetchAllocations = async () => {
       setLoading(true);
       try {
-        let q: Query = collection(firestore, ALLOCATIONS_COLLECTION);
+        let q: Query | null = collection(firestore, ALLOCATIONS_COLLECTION);
+        const userRoles = currentUserData?.roles || [];
+        const userBranchIds = currentUserData?.branchIds || [];
 
-        if (selectedBranchId && selectedBranchId !== 'all') {
-          q = query(q, where('branchId', '==', selectedBranchId));
+        if (userRoles.includes('Менеджер') && !userRoles.includes('Администратор')) {
+            // Manager sees allocations from their branches
+             if (selectedBranchId && selectedBranchId !== 'all') {
+                if (userBranchIds.includes(selectedBranchId)) {
+                    q = query(q, where('branchId', '==', selectedBranchId));
+                } else {
+                    q = null; // Manager selected a branch they don't have access to
+                }
+            } else {
+                 if (userBranchIds.length > 0) {
+                    q = query(q, where('branchId', 'in', userBranchIds));
+                 } else {
+                    q = null; // Manager has no branches assigned
+                 }
+            }
+        } else if (userRoles.includes('Администратор')) {
+            // Admin can filter by branch
+            if (selectedBranchId && selectedBranchId !== 'all') {
+                q = query(q, where('branchId', '==', selectedBranchId));
+            }
+        } else {
+             // Participants shouldn't see allocations directly, this will result in an empty query
+            q = null;
         }
 
-        const querySnapshot = await getDocs(q);
+        let enrichedAllocs: Allocation[] = [];
+        if (q) {
+            const querySnapshot = await getDocs(q);
 
-        const appsMap = new Map(applications.map((a) => [a.id, a]));
-        const usersMap = new Map(users.map((u) => [u.id, `${u.surname} ${u.name}`]));
-        const lotsMap = new Map(lots.map((l) => [l.id, l.title]));
-        const branchesMap = new Map(branches.map((b) => [b.id, b.name]));
+            const appsMap = new Map(applications.map((a) => [a.id, a]));
+            const usersMap = new Map(users.map((u) => [u.id, `${u.surname} ${u.name}`]));
+            const lotsMap = new Map(lots.map((l) => [l.id, l.title]));
+            const branchesMap = new Map(branches.map((b) => [b.id, b.name]));
 
-        const enrichedAllocs = querySnapshot.docs.map((doc) => {
-          const alloc = doc.data() as Allocation;
-          const app = appsMap.get(alloc.applicationId);
-          
-          return {
-            ...alloc,
-            id: doc.id,
-            userName: app ? usersMap.get(app.userId) || 'Неизвестно' : 'Неизвестно',
-            lotTitle: app ? lotsMap.get(app.lotId) || 'Неизвестно' : 'Неизвестно',
-            branchName: app ? branchesMap.get(app.branchId) || 'Неизвестно' : 'Неизвестно',
-          };
-        });
-
+            enrichedAllocs = querySnapshot.docs.map((doc) => {
+              const alloc = doc.data() as Allocation;
+              const app = appsMap.get(alloc.applicationId);
+              
+              return {
+                ...alloc,
+                id: doc.id,
+                userName: app ? usersMap.get(app.userId) || 'Неизвестно' : 'Неизвестно',
+                lotTitle: app ? lotsMap.get(app.lotId) || 'Неизвестно' : 'Неизвестно',
+                branchName: app ? branchesMap.get(app.branchId) || 'Неизвестно' : 'Неизвестно',
+              };
+            });
+        }
         setAllocations(enrichedAllocs);
-      } catch (err: any) {
+      } catch (err: any) => {
         setError(err);
         console.error("Error fetching allocations: ", err);
       } finally {
@@ -83,10 +105,12 @@ export function useAllocations() {
       }
     };
 
-    fetchAllocations();
-  }, [firestore, authUser, selectedBranchId, applications, users, lots, branches, applicationsLoading, usersLoading, lotsLoading, branchesLoading]);
+    if (currentUserData) {
+        fetchAllocations();
+    }
+  }, [firestore, authUser, currentUserData, isCurrentUserDataLoading, selectedBranchId, applications, users, lots, branches, applicationsLoading, usersLoading, lotsLoading, branchesLoading]);
 
-  const combinedLoading = loading || applicationsLoading || usersLoading || lotsLoading || branchesLoading;
+  const combinedLoading = loading || isCurrentUserDataLoading || applicationsLoading || usersLoading || lotsLoading || branchesLoading;
 
   return { data: allocations, loading: combinedLoading, error };
 }
@@ -102,6 +126,11 @@ export function addAllocation(allocationData: Omit<Allocation, 'id'>) {
 
 export function useAcceptedApplications() {
     const { data: applications, loading, error } = useApplications();
-    const acceptedApps = applications?.filter(app => app.status === 'Принята') || [];
+    // Also filter out applications that have already been allocated
+    const { data: allocations } = useAllocations();
+    const allocatedApplicationIds = allocations?.map(a => a.applicationId) || [];
+    
+    const acceptedApps = applications?.filter(app => app.status === 'Принята' && !allocatedApplicationIds.includes(app.id)) || [];
+    
     return { data: acceptedApps, loading, error };
 }

@@ -1,29 +1,28 @@
 'use client';
 import { collection, query, where, getDocs, Query, addDoc, doc } from 'firebase/firestore';
-import { useFirestore, useMemoFirebase, useUser } from '..';
-import { Application, ApplicationStatus, Lot, User } from '@/lib/types';
+import { useFirestore, useUser } from '..';
+import { Application, ApplicationStatus } from '@/lib/types';
 import {
   APPLICATIONS_COLLECTION,
-  LOTS_COLLECTION,
-  USERS_COLLECTION,
 } from '@/lib/constants';
-import { useCollection } from './use-collection.tsx';
 import { useEffect, useState } from 'react';
 import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 import { useBranches } from './branches';
 import { useUsers } from './users';
 import { useLots } from './lots';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '../non-blocking-updates';
+import { useCurrentUserData } from '@/hooks/use-current-user-data';
 
 // Main hook to get applications, enriched with related data
 export function useApplications() {
   const firestore = useFirestore();
   const { user: authUser } = useUser();
+  const { currentUserData, isUserLoading: isCurrentUserDataLoading } = useCurrentUserData();
   const { selectedBranchId } = useBranchSelection();
 
   // Fetch all necessary data for enrichment
   const { data: users, isLoading: usersLoading } = useUsers();
-  const { data: lots, isLoading: lotsLoading } = useLots();
+  const { data: lots, loading: lotsLoading } = useLots();
   const { data: branches, loading: branchesLoading } = useBranches(true);
 
   const [applications, setApplications] = useState<Application[]>([]);
@@ -31,45 +30,71 @@ export function useApplications() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!firestore || !authUser) {
-        if (!authUser && !loading) setLoading(false);
+    if (!firestore || !authUser || isCurrentUserDataLoading) {
+        if (!isCurrentUserDataLoading && !loading) setLoading(false);
         return;
     };
 
-    // Wait until all enrichment data is loaded before fetching applications
     if (usersLoading || lotsLoading || branchesLoading) {
       return;
     }
 
-
     const fetchApplications = async () => {
       setLoading(true);
       try {
-        let q: Query = collection(firestore, APPLICATIONS_COLLECTION);
+        let q: Query | null = collection(firestore, APPLICATIONS_COLLECTION);
+        const userRoles = currentUserData?.roles || [];
+        const userBranchIds = currentUserData?.branchIds || [];
 
-        // Apply filtering based on selected branch
-        if (selectedBranchId && selectedBranchId !== 'all') {
-          q = query(q, where('branchId', '==', selectedBranchId));
+        if (userRoles.includes('Участник') && !userRoles.includes('Администратор') && !userRoles.includes('Менеджер')) {
+            // Participant sees only their own applications
+            q = query(q, where('userId', '==', authUser.uid));
+        } else if (userRoles.includes('Менеджер') && !userRoles.includes('Администратор')) {
+            // Manager sees applications from their branches
+             if (selectedBranchId && selectedBranchId !== 'all') {
+                if (userBranchIds.includes(selectedBranchId)) {
+                    q = query(q, where('branchId', '==', selectedBranchId));
+                } else {
+                    q = null; // Manager selected a branch they don't have access to
+                }
+            } else {
+                 if (userBranchIds.length > 0) {
+                    q = query(q, where('branchId', 'in', userBranchIds));
+                 } else {
+                    q = null; // Manager has no branches assigned
+                 }
+            }
+        } else if (userRoles.includes('Администратор')) {
+            // Admin can filter by branch
+            if (selectedBranchId && selectedBranchId !== 'all') {
+                q = query(q, where('branchId', '==', selectedBranchId));
+            }
+        } else {
+            q = null; // No roles match, should see nothing
         }
 
-        const querySnapshot = await getDocs(q);
 
-        const usersMap = new Map(users.map((u) => [u.id, `${u.surname} ${u.name}`]));
-        const lotsMap = new Map(lots.map((l) => [l.id, l.title]));
-        const branchesMap = new Map(branches.map((b) => [b.id, b.name]));
+        let enrichedApps: Application[] = [];
+        if (q) {
+            const querySnapshot = await getDocs(q);
+            const usersMap = new Map(users.map((u) => [u.id, `${u.surname} ${u.name}`]));
+            const lotsMap = new Map(lots.map((l) => [l.id, l.title]));
+            const branchesMap = new Map(branches.map((b) => [b.id, b.name]));
 
-        const enrichedApps = querySnapshot.docs.map((doc) => {
-          const app = doc.data() as Application;
-          return {
-            ...app,
-            id: doc.id,
-            userName: usersMap.get(app.userId) || 'Неизвестный пользователь',
-            lotTitle: lotsMap.get(app.lotId) || 'Неизвестный лот',
-            branchName: branchesMap.get(app.branchId) || 'Неизвестный филиал',
-          };
-        });
-
+            enrichedApps = querySnapshot.docs.map((doc) => {
+              const app = doc.data() as Application;
+              return {
+                ...app,
+                id: doc.id,
+                userName: usersMap.get(app.userId) || 'Неизвестный пользователь',
+                lotTitle: lotsMap.get(app.lotId) || 'Неизвестный лот',
+                branchName: branchesMap.get(app.branchId) || 'Неизвестный филиал',
+              };
+            });
+        }
+        
         setApplications(enrichedApps);
+
       } catch (err: any) {
         setError(err);
         console.error("Error fetching applications: ", err);
@@ -78,10 +103,12 @@ export function useApplications() {
       }
     };
 
-    fetchApplications();
-  }, [firestore, authUser, selectedBranchId, users, lots, branches, usersLoading, lotsLoading, branchesLoading]);
+    if (currentUserData) {
+        fetchApplications();
+    }
+  }, [firestore, authUser, currentUserData, isCurrentUserDataLoading, selectedBranchId, users, lots, branches, usersLoading, lotsLoading, branchesLoading]);
 
-  const combinedLoading = loading || usersLoading || lotsLoading || branchesLoading;
+  const combinedLoading = loading || isCurrentUserDataLoading || usersLoading || lotsLoading || branchesLoading;
 
   return { data: applications, loading: combinedLoading, error };
 }

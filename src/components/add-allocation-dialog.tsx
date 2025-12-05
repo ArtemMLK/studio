@@ -5,7 +5,7 @@ import { CalendarIcon, PlusCircle, ChevronsUpDown, Check } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import type { Allocation, Application } from '@/lib/types';
+import type { Allocation } from '@/lib/types';
 import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,7 @@ export function AddAllocationDialog({ onAllocationAdded, triggerButton }: AddAll
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!acceptedApps) return;
     const selectedApp = acceptedApps.find(app => app.id === values.applicationId);
     if (!selectedApp) {
         toast({
@@ -131,7 +132,7 @@ export function AddAllocationDialog({ onAllocationAdded, triggerButton }: AddAll
                           )}
                         >
                           {field.value
-                            ? `${acceptedApps.find(app => app.id === field.value)?.lotTitle} - ${acceptedApps.find(app => app.id === field.value)?.userName}`
+                            ? `${acceptedApps?.find(app => app.id === field.value)?.lotTitle} - ${acceptedApps?.find(app => app.id === field.value)?.userName}`
                             : 'Выберите заявку'}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -144,7 +145,7 @@ export function AddAllocationDialog({ onAllocationAdded, triggerButton }: AddAll
                             {appsLoading && <CommandEmpty>Загрузка...</CommandEmpty>}
                             <CommandEmpty>Принятые заявки не найдены.</CommandEmpty>
                             <CommandGroup>
-                            {acceptedApps.map((app) => (
+                            {acceptedApps?.map((app) => (
                                 <CommandItem
                                 value={`${app.lotTitle} ${app.userName}`}
                                 key={app.id}
