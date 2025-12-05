@@ -13,33 +13,36 @@ export default function UsersPage() {
   const { currentUserData, isUserLoading } = useCurrentUserData();
 
   useEffect(() => {
-    // Wait until loading is complete before checking roles
+    // Не делать ничего, пока идет загрузка
     if (isUserLoading) {
       return;
     }
 
-    // If loading is done and there's still no user data or the user is not an admin, redirect.
+    // После загрузки, если данных нет или пользователь не админ, перенаправить
     if (!currentUserData || !hasAdminRole(currentUserData.roles)) {
       router.replace('/dashboard');
     }
   }, [isUserLoading, currentUserData, router]);
 
-  // Show a loading state while we verify the user's role
+  // Пока идет загрузка, или если пользователь не админ (до того как сработает редирект),
+  // показываем состояние загрузки. Это предотвращает мигание контента.
   if (isUserLoading || !currentUserData || !hasAdminRole(currentUserData.roles)) {
     return (
-      <div className="p-4">
-        <div className="flex items-center justify-between">
+      <>
+        <div className="flex items-center justify-between space-y-2">
           <div>
             <Skeleton className="h-8 w-48 mb-2" />
             <Skeleton className="h-4 w-72" />
           </div>
           <Skeleton className="h-10 w-44" />
         </div>
-        <Skeleton className="h-[500px] w-full mt-6" />
-      </div>
+        <div className="mt-4">
+          <Skeleton className="h-[500px] w-full" />
+        </div>
+      </>
     );
   }
 
-  // If we reach here, the user is a verified admin.
+  // Если мы дошли сюда, значит загрузка завершена и пользователь - админ.
   return <UsersTable />;
 }
