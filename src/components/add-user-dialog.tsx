@@ -224,10 +224,10 @@ export function AddUserDialog({
                                 value={role}
                                 key={role}
                                 onSelect={() => {
-                                  const currentValue = form.getValues('roles');
-                                  const updatedRoles = currentValue.includes(role)
-                                    ? currentValue.filter(r => r !== role)
-                                    : [...currentValue, role];
+                                  const currentRoles = form.getValues('roles') || [];
+                                  const updatedRoles = currentRoles.includes(role)
+                                    ? currentRoles.filter(r => r !== role)
+                                    : [...currentRoles, role];
                                   form.setValue('roles', updatedRoles, { shouldValidate: true });
                                 }}
                               >
@@ -293,10 +293,10 @@ export function AddUserDialog({
                                 value={branch.name}
                                 key={branch.id}
                                 onSelect={() => {
-                                   const currentValue = form.getValues('branchIds');
-                                   const updatedBranches = currentValue.includes(branch.id)
-                                    ? currentValue.filter(id => id !== branch.id)
-                                    : [...currentValue, branch.id];
+                                   const currentBranches = form.getValues('branchIds') || [];
+                                   const updatedBranches = currentBranches.includes(branch.id)
+                                    ? currentBranches.filter(id => id !== branch.id)
+                                    : [...currentBranches, branch.id];
                                    form.setValue('branchIds', updatedBranches, { shouldValidate: true });
                                 }}
                               >
