@@ -1,8 +1,8 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowLeft, Box, PlusCircle, Search } from 'lucide-react';
+import { ArrowLeft, Box, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 
 import { useProcurementProcess } from '@/firebase/firestore/procurements';
@@ -22,12 +22,20 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { AddLotDialog } from '@/components/add-lot-dialog';
 import { useCurrentUserData } from '@/hooks/use-current-user-data';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MoreHorizontal } from 'lucide-react';
 
 export default function ProcurementDetailsPage() {
   const params = useParams();
+  const router = useRouter();
   const procurementId = params.procurementId as string;
 
   const { data: procurement, loading: procurementLoading } =
@@ -36,8 +44,9 @@ export default function ProcurementDetailsPage() {
     useLotsByProcurement(procurementId);
   const { currentUserData } = useCurrentUserData();
 
-  const canManage = currentUserData?.roles.includes('Администратор') || currentUserData?.roles.includes('Менеджер');
-
+  const canManage =
+    currentUserData?.roles.includes('Администратор') ||
+    currentUserData?.roles.includes('Менеджер');
 
   const handleLotAdded = (newLotData: Omit<Lot, 'id' | 'status'>) => {
     addLot({
@@ -47,46 +56,46 @@ export default function ProcurementDetailsPage() {
     });
     // Maybe update the lotCount on the procurement doc
   };
-  
+
   if (procurementLoading) {
     return (
       <>
         <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
             <Skeleton className="h-9 w-9 rounded-md" />
             <div className="grid gap-1.5">
-                <Skeleton className="h-8 w-64" />
-                <Skeleton className="h-5 w-80" />
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-5 w-80" />
             </div>
-            </div>
-            <Skeleton className="h-9 w-28" />
+          </div>
+          <Skeleton className="h-9 w-28" />
         </div>
-        
+
         <Card className="mt-6">
-            <CardHeader>
-                <Skeleton className="h-6 w-48" />
-                <Skeleton className="h-4 w-72" />
-            </CardHeader>
-            <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Card key={i} className="flex flex-col">
-                    <CardHeader className="p-0">
-                      <Skeleton className="h-48 w-full rounded-t-lg" />
-                    </CardHeader>
-                    <CardContent className="flex-grow p-4">
-                      <Skeleton className="mb-2 h-5 w-20 rounded-full" />
-                      <Skeleton className="mt-2 h-6 w-3/4" />
-                      <Skeleton className="mt-2 h-7 w-1/2" />
-                    </CardContent>
-                    <CardFooter className="flex justify-between p-4 pt-0">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-9 w-24" />
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-72" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="flex flex-col">
+                  <CardHeader className="p-0">
+                    <Skeleton className="h-48 w-full rounded-t-lg" />
+                  </CardHeader>
+                  <CardContent className="flex-grow p-4">
+                    <Skeleton className="mb-2 h-5 w-20 rounded-full" />
+                    <Skeleton className="mt-2 h-6 w-3/4" />
+                    <Skeleton className="mt-2 h-7 w-1/2" />
+                  </CardContent>
+                  <CardFooter className="flex justify-between p-4 pt-0">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-9 w-24" />
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
         </Card>
       </>
     );
@@ -127,15 +136,15 @@ export default function ProcurementDetailsPage() {
         </div>
         {canManage && (
           <AddLotDialog
-              procurementId={procurementId}
-              branchId={procurement.branchId}
-              onLotAdded={handleLotAdded}
-              triggerButton={
-                <Button size="sm" className="ml-auto gap-1">
-                  <PlusCircle className="h-4 w-4" />
-                  Добавить Лот
-                </Button>
-              }
+            procurementId={procurementId}
+            branchId={procurement.branchId}
+            onLotAdded={handleLotAdded}
+            triggerButton={
+              <Button size="sm" className="ml-auto gap-1">
+                <PlusCircle className="h-4 w-4" />
+                Добавить Лот
+              </Button>
+            }
           />
         )}
       </div>
@@ -188,7 +197,8 @@ export default function ProcurementDetailsPage() {
                         variant="outline"
                         className={cn(
                           'mb-2',
-                          lot.status === 'Активен' && 'border-green-500/50 text-green-400'
+                          lot.status === 'Активен' &&
+                            'border-green-500/50 text-green-400'
                         )}
                       >
                         {lot.status}
@@ -203,30 +213,32 @@ export default function ProcurementDetailsPage() {
                       <p className="text-xs text-muted-foreground">
                         До: {lot.deadline}
                       </p>
-                      <Button variant="outline" size="sm">
-                        Подробнее
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/dashboard/lots/${lot.id}`}>Подробнее</Link>
                       </Button>
                     </CardFooter>
                   </Card>
                 ))}
               </div>
             ) : (
-                <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-                    <Box className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold">В этой закупке пока нет лотов</h3>
-                    <p className="text-muted-foreground mt-2">
-                    Начните с добавления первого лота.
-                    </p>
-                    <div className="mt-4">
-                        {canManage && (
-                          <AddLotDialog
-                              procurementId={procurementId}
-                              branchId={procurement.branchId}
-                              onLotAdded={handleLotAdded}
-                          />
-                        )}
-                    </div>
+              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center">
+                <Box className="mb-4 h-12 w-12 text-muted-foreground" />
+                <h3 className="text-xl font-semibold">
+                  В этой закупке пока нет лотов
+                </h3>
+                <p className="mt-2 text-muted-foreground">
+                  Начните с добавления первого лота.
+                </p>
+                <div className="mt-4">
+                  {canManage && (
+                    <AddLotDialog
+                      procurementId={procurementId}
+                      branchId={procurement.branchId}
+                      onLotAdded={handleLotAdded}
+                    />
+                  )}
                 </div>
+              </div>
             )}
           </CardContent>
         </Card>

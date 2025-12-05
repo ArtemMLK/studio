@@ -20,6 +20,7 @@ import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
 import { useUser } from '@/firebase';
 import { addApplication } from '@/firebase/firestore/applications';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 export default function LotsPage() {
   const { selectedBranchId } = useBranchSelection();
@@ -85,15 +86,17 @@ export default function LotsPage() {
           : lots?.map((lot) => (
               <Card key={lot.id} className="flex flex-col">
                 <CardHeader className="p-0">
-                  <div className="relative h-48 w-full">
-                    <Image
-                      src={lot.imageUrl}
-                      alt={lot.title}
-                      fill
-                      className="rounded-t-lg object-cover"
-                      data-ai-hint={lot.imageHint}
-                    />
-                  </div>
+                   <Link href={`/dashboard/lots/${lot.id}`}>
+                    <div className="relative h-48 w-full">
+                        <Image
+                        src={lot.imageUrl}
+                        alt={lot.title}
+                        fill
+                        className="cursor-pointer rounded-t-lg object-cover transition-transform hover:scale-105"
+                        data-ai-hint={lot.imageHint}
+                        />
+                    </div>
+                   </Link>
                 </CardHeader>
                 <CardContent className="flex-grow p-4">
                   <Badge
@@ -112,7 +115,9 @@ export default function LotsPage() {
                   >
                     {lot.status}
                   </Badge>
-                  <h3 className="font-semibold">{lot.title}</h3>
+                   <Link href={`/dashboard/lots/${lot.id}`} className="hover:underline">
+                    <h3 className="font-semibold">{lot.title}</h3>
+                   </Link>
                   <p className="mt-2 text-xl font-bold">
                     {new Intl.NumberFormat('ru-RU').format(lot.price)} {lot.currency}
                   </p>

@@ -23,6 +23,10 @@ service cloud.firestore {
       return isSignedIn() && 'roles' in getUserData() && getUserData().roles.hasAny(['admin', 'Администратор']);
     }
 
+    function isManager() {
+      return isSignedIn() && 'roles' in getUserData() && getUserData().roles.hasAny(['admin', 'Администратор', 'Менеджер']);
+    }
+
     function isVerifiedOwner(userId) {
       return isOwner(userId) && isNotBlacklisted();
     }
@@ -55,7 +59,9 @@ service cloud.firestore {
 
     match /lots/{lotId} {
       allow read: if isSignedIn() && isNotBlacklisted();
-      allow write: if isAdmin(); // Only admins can write directly to the root lots collection
+      allow create: if isManager() && hasAccessToBranch(request.resource.data.branchId);
+      allow update: if isManager() && hasAccessToBranch(request.resource.data.branchId);
+      allow delete: if isAdmin();
     }
 
     match /applications/{applicationId} {
@@ -80,8 +86,9 @@ service cloud.firestore {
 
     match /branches/{branchId}/procurementProcesses/{procurementProcessId} {
       allow get, list: if hasAccessToBranch(branchId);
-      allow create: if hasAccessToBranch(branchId);
-      allow update, delete: if hasAccessToBranch(branchId) && resource != null;
+      allow create: if hasAccessToBranch(branchId) && isManager();
+      allow update: if hasAccessToBranch(branchId) && isManager() && resource != null;
+      allow delete: if hasAccessToBranch(branchId) && isAdmin() && resource != null;
     }
   }
 }

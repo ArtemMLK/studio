@@ -20,7 +20,7 @@ export type Lot = {
   id: string;
   title: string;
   procurementId: string;
-  branchId: string; // Added to filter lots by branch
+  branchId: string;
   plan: number;
   price: number;
   currency: string;
@@ -28,6 +28,9 @@ export type Lot = {
   status: LotStatus;
   imageUrl: string;
   imageHint: string;
+  // Enriched fields
+  procurementName?: string;
+  branchName?: string;
 };
 
 export type ApplicationStatus = 'Новая' | 'Принята' | 'Отклонена';
