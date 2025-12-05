@@ -32,7 +32,7 @@ import { useCurrentUserData } from '@/hooks/use-current-user-data';
 
 export default function ProcurementsPage() {
   const { selectedBranchId } = useBranchSelection();
-  const { data: procurements, loading } = useProcurementProcesses(selectedBranchId);
+  const { data: procurements, loading } = useProcurementProcesses();
   const router = useRouter();
   const { currentUserData } = useCurrentUserData();
 
@@ -61,7 +61,7 @@ export default function ProcurementsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Закупки</h1>
           <p className="text-muted-foreground">
-            Управление процессами закупок.
+            Закупка — это общее мероприятие (например, тендер), которое объединяет в себе несколько лотов.
           </p>
         </div>
         {canManage && (
@@ -72,9 +72,9 @@ export default function ProcurementsPage() {
       </div>
       <Card className="mt-4">
         <CardHeader>
-          <CardTitle>Активные закупки</CardTitle>
+          <CardTitle>Список закупок</CardTitle>
           <CardDescription>
-            Список всех текущих закупочных процедур.
+            Выберите закупку, чтобы просмотреть или добавить в нее лоты.
           </CardDescription>
         </CardHeader>
         <CardContent>

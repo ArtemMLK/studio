@@ -55,7 +55,7 @@ export default function LotsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Все Лоты</h1>
           <p className="text-muted-foreground">
-            Просмотр и управление всеми доступными лотами в системе.
+            Лот — это конкретный товар или услуга, на который можно подать заявку.
           </p>
         </div>
       </div>
