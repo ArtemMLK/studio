@@ -1,11 +1,14 @@
-
 'use client';
 
 import { Handshake } from 'lucide-react';
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useState, FormEvent, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { getDoc, doc } from 'firebase/firestore';
 
-import { login } from '@/app/actions';
+import { useAuth, useFirestore } from '@/firebase';
+import { USERS_COLLECTION } from '@/lib/constants';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -18,17 +21,68 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-function LoginButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" className="w-full" aria-disabled={pending}>
-      {pending ? 'Вход...' : 'Войти'}
-    </Button>
-  );
-}
-
 export default function LoginPage() {
-  const [state, dispatch] = useActionState(login, undefined);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.push('/dashboard');
+      }
+    });
+    return () => unsubscribe();
+  }, [auth, router]);
+
+
+  const handleLogin = async (event: FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    if (!email || !password) {
+      setError('Логин и пароль обязательны.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // After successful sign-in, check the user's document in Firestore
+      const userDocRef = doc(firestore, USERS_COLLECTION, user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists() && userDoc.data()?.blacklisted === true) {
+        await auth.signOut(); // Sign out the blacklisted user immediately
+        setError('Ваш аккаунт заблокирован.');
+      } else {
+        // Successful login, onAuthStateChanged will handle the redirect
+      }
+    } catch (error: any) {
+      console.error('Firebase Auth Error:', error.code, error.message);
+      if (
+        error.code === 'auth/user-not-found' ||
+        error.code === 'auth/wrong-password' ||
+        error.code === 'auth/invalid-credential'
+      ) {
+        setError('Неверный логин или пароль.');
+      } else {
+        setError('Произошла ошибка при входе. Попробуйте снова.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
@@ -44,7 +98,7 @@ export default function LoginPage() {
               Введите ваш логин (email) и пароль для доступа
             </CardDescription>
           </CardHeader>
-          <form action={dispatch}>
+          <form onSubmit={handleLogin}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="login">Логин (Email)</Label>
@@ -54,18 +108,31 @@ export default function LoginPage() {
                   type="email"
                   placeholder="admin@proflow.com"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Пароль</Label>
-                <Input id="password" name="password" type="password" required />
+                <Input 
+                  id="password" 
+                  name="password" 
+                  type="password" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                />
               </div>
-              {state?.error && (
-                <p className="text-sm font-medium text-destructive">{state.error}</p>
+              {error && (
+                <p className="text-sm font-medium text-destructive">{error}</p>
               )}
             </CardContent>
             <CardFooter>
-              <LoginButton />
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Вход...' : 'Войти'}
+              </Button>
             </CardFooter>
           </form>
         </Card>

@@ -12,48 +12,12 @@ import { USERS_COLLECTION } from '@/lib/constants';
 // Initialize Firebase Admin SDK
 const { auth, firestore } = initializeFirebase();
 
-export async function login(
-  prevState: { error: string } | undefined,
-  formData: FormData
-) {
-  const email = formData.get('login') as string; // Assuming login is email
-  const password = formData.get('password') as string;
-
-  if (!email || !password) {
-    return { error: 'Логин и пароль обязательны.' };
-  }
-
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    // After successful sign-in, check the user's document in Firestore
-    const userDocRef = doc(firestore, USERS_COLLECTION, user.uid);
-    const userDoc = await getDoc(userDocRef);
-
-    if (userDoc.exists() && userDoc.data()?.blacklisted === true) {
-      await auth.signOut(); // Sign out the blacklisted user immediately
-      return { error: 'Ваш аккаунт заблокирован.' };
-    }
-    
-    // If user doc doesn't exist or user is not blacklisted, proceed to dashboard
-
-  } catch (error: any) {
-    console.error('Firebase Auth Error:', error.code, error.message);
-    if (
-      error.code === 'auth/user-not-found' ||
-      error.code === 'auth/wrong-password' ||
-      error.code === 'auth/invalid-credential'
-    ) {
-      return { error: 'Неверный логин или пароль.' };
-    }
-    return { error: 'Произошла ошибка при входе. Попробуйте снова.' };
-  }
-
-  redirect('/dashboard');
-}
+// This server action is no longer used for login, but kept for logout functionality.
 
 export async function logout() {
-  await auth.signOut();
+  // Client-side sign out is handled by onAuthStateChanged listener,
+  // but we can call this to clear the server-side session if any.
+  // In this app setup, the main logic is on the client.
+  // For a robust app, you'd manage server sessions, but here we just redirect.
   redirect('/');
 }
