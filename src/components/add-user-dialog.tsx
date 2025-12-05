@@ -47,7 +47,7 @@ interface AddUserDialogProps {
   onUserAdded: (newUser: Omit<User, 'id'>, generatedPassword: string) => void;
 }
 
-const formSchemaBase = z.object({
+const formSchema = z.object({
   name: z.string().min(2, 'Имя должно содержать не менее 2 символов.'),
   surname: z
     .string()
@@ -67,8 +67,8 @@ const formSchemaBase = z.object({
 });
 
 const getFinalSchema = (existingUsers: User[] | null) => {
-    return formSchemaBase.extend({
-        phone: formSchemaBase.shape.phone.refine(
+    return formSchema.extend({
+        phone: formSchema.shape.phone.refine(
             (value) => !existingUsers?.some((user) => user.phone === value),
             'Этот телефон уже используется.'
         ),
@@ -144,147 +144,147 @@ export function AddUserDialog({
             <FormField
               control={form.control}
               name="roles"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Роли</FormLabel>
-                  <Popover
-                    open={rolesPopoverOpen}
-                    onOpenChange={setRolesPopoverOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className={cn(
-                            'justify-between',
-                            !field.value?.length && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value?.length
-                            ? field.value.join(', ')
-                            : 'Выберите роли'}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0">
-                      <Command>
-                        <CommandInput placeholder="Поиск роли..." />
-                        <CommandList>
-                          <CommandEmpty>Роль не найдена.</CommandEmpty>
-                          <CommandGroup>
-                            {userRoles.map((role) => (
-                              <CommandItem
-                                value={role}
-                                key={role}
-                                onSelect={(currentValue) => {
-                                  const current = field.value ?? [];
-                                  const updated = current.includes(currentValue as UserRole)
-                                    ? current.filter(r => r !== currentValue)
-                                    : [...current, currentValue as UserRole];
-                                  
-                                  console.log("ROLE SELECT", { clicked: currentValue, before: current, after: updated });
-                                  form.setValue('roles', updated, { shouldValidate: true });
-                                }}
-                                className={cn(
-                                  "cursor-pointer",
-                                  field.value?.includes(role) && "bg-muted"
-                                )}
-                              >
-                                <Check
-                                  className={cn(
-                                    'mr-2 h-4 w-4',
-                                    field.value?.includes(role)
-                                      ? 'opacity-100'
-                                      : 'opacity-0'
-                                  )}
-                                />
-                                {role}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                console.log("FIELD ROLES RENDER", field.value);
+                return (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Роли</FormLabel>
+                    <Popover
+                      open={rolesPopoverOpen}
+                      onOpenChange={setRolesPopoverOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              'justify-between',
+                              !field.value?.length && 'text-muted-foreground'
+                            )}
+                          >
+                            {field.value?.length
+                              ? field.value.join(', ')
+                              : 'Выберите роли'}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Поиск роли..." />
+                          <CommandList>
+                            <CommandEmpty>Роль не найдена.</CommandEmpty>
+                            <CommandGroup>
+                              {userRoles.map((role) => (
+                                <CommandItem
+                                  value={role}
+                                  key={role}
+                                  onSelect={(currentValue) => {
+                                    const current = field.value ?? [];
+                                    const updated = current.includes(currentValue as UserRole)
+                                      ? current.filter(r => r !== currentValue)
+                                      : [...current, currentValue as UserRole];
+
+                                    console.log("ROLE SELECT", { clicked: currentValue, before: current, after: updated });
+                                    field.onChange(updated);
+                                  }}
+                                  className={cn("cursor-pointer", field.value?.includes(role) && "bg-muted")}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      field.value?.includes(role)
+                                        ? 'opacity-100'
+                                        : 'opacity-0'
+                                    )}
+                                  />
+                                  {role}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
             />
 
             <FormField
               control={form.control}
               name="branchIds"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Филиалы</FormLabel>
-                  <Popover
-                    open={branchesPopoverOpen}
-                    onOpenChange={setBranchesPopoverOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className={cn(
-                            'justify-between overflow-hidden text-ellipsis',
-                            !field.value?.length && 'text-muted-foreground'
-                          )}
-                        >
-                           {field.value?.length
-                            ? field.value.length > 2
-                              ? `${field.value.length} филиалов выбрано`
-                              : branchesData?.filter(b => field.value.includes(b.id)).map(b => b.name).join(', ')
-                            : 'Выберите филиалы'}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0">
-                      <Command>
-                        <CommandInput placeholder="Поиск филиала..." />
-                        <CommandList>
-                           <CommandEmpty>Филиал не найден.</CommandEmpty>
-                          <CommandGroup>
-                            {branchesData?.map((branch) => (
-                              <CommandItem
-                                value={branch.id}
-                                key={branch.id}
-                                onSelect={(currentValue) => {
-                                   const current = field.value ?? [];
-                                   const updated = current.includes(currentValue)
-                                    ? current.filter(id => id !== currentValue)
-                                    : [...current, currentValue];
-                                  
-                                   console.log("BRANCH SELECT", { clicked: currentValue, before: current, after: updated });
-                                   form.setValue('branchIds', updated, { shouldValidate: true });
-                                }}
-                                className={cn(
-                                  "cursor-pointer",
-                                  field.value?.includes(branch.id) && "bg-muted"
-                                )}
-                              >
-                                <Check
-                                  className={cn(
-                                    'mr-2 h-4 w-4',
-                                    field.value?.includes(branch.id)
-                                      ? 'opacity-100'
-                                      : 'opacity-0'
-                                  )}
-                                />
-                                {branch.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                console.log("FIELD BRANCHIDS RENDER", field.value);
+                return (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Филиалы</FormLabel>
+                    <Popover
+                      open={branchesPopoverOpen}
+                      onOpenChange={setBranchesPopoverOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              'justify-between overflow-hidden text-ellipsis',
+                              !field.value?.length && 'text-muted-foreground'
+                            )}
+                          >
+                             {field.value?.length
+                              ? field.value.length > 2
+                                ? `${field.value.length} филиалов выбрано`
+                                : branchesData?.filter(b => field.value.includes(b.id)).map(b => b.name).join(', ')
+                              : 'Выберите филиалы'}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Поиск филиала..." />
+                          <CommandList>
+                             <CommandEmpty>Филиал не найден.</CommandEmpty>
+                            <CommandGroup>
+                              {branchesData?.map((branch) => (
+                                <CommandItem
+                                  value={branch.id}
+                                  key={branch.id}
+                                  onSelect={(currentValue) => {
+                                     const current = field.value ?? [];
+                                     const updated = current.includes(currentValue)
+                                      ? current.filter(id => id !== currentValue)
+                                      : [...current, currentValue];
+                                    
+                                     console.log("BRANCH SELECT", { clicked: currentValue, before: current, after: updated });
+                                     field.onChange(updated);
+                                  }}
+                                  className={cn("cursor-pointer", field.value?.includes(branch.id) && "bg-muted")}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      field.value?.includes(branch.id)
+                                        ? 'opacity-100'
+                                        : 'opacity-0'
+                                    )}
+                                  />
+                                  {branch.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
             />
 
             <DialogFooter className="col-span-2 mt-4">
