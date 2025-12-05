@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -38,7 +38,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { userRoles, type User, type UserRole, type Branch } from '@/lib/types';
+import { userRoles, type User, type UserRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useUsers } from '@/firebase/firestore/users';
 import { useBranches } from '@/firebase/firestore/branches';
@@ -55,7 +55,7 @@ export function AddUserDialog({
   const [branchesPopoverOpen, setBranchesPopoverOpen] = useState(false);
 
   const { data: existingUsers } = useUsers();
-  const { data: branchesData } = useBranches();
+  const { data: branchesData } = useBranches(true); // Fetch all branches
   
   const formSchema = useMemo(() => z.object({
     name: z.string().min(2, 'Имя должно содержать не менее 2 символов.'),
@@ -225,13 +225,10 @@ export function AddUserDialog({
                                 key={role}
                                 onSelect={() => {
                                   const currentValue = form.getValues('roles');
-                                  if (currentValue.includes(role)) {
-                                    form.setValue('roles', currentValue.filter(r => r !== role), { shouldValidate: true });
-                                  } else {
-                                    form.setValue('roles', [...currentValue, role], { shouldValidate: true });
-                                  }
-                                  // This was the missing piece
-                                  setRolesPopoverOpen(false);
+                                  const updatedRoles = currentValue.includes(role)
+                                    ? currentValue.filter(r => r !== role)
+                                    : [...currentValue, role];
+                                  form.setValue('roles', updatedRoles, { shouldValidate: true });
                                 }}
                               >
                                 <Check
@@ -297,13 +294,10 @@ export function AddUserDialog({
                                 key={branch.id}
                                 onSelect={() => {
                                    const currentValue = form.getValues('branchIds');
-                                   if (currentValue.includes(branch.id)) {
-                                     form.setValue('branchIds', currentValue.filter(b => b !== branch.id), { shouldValidate: true });
-                                   } else {
-                                     form.setValue('branchIds', [...currentValue, branch.id], { shouldValidate: true });
-                                   }
-                                   // This was also missing
-                                   setBranchesPopoverOpen(false);
+                                   const updatedBranches = currentValue.includes(branch.id)
+                                    ? currentValue.filter(id => id !== branch.id)
+                                    : [...currentValue, branch.id];
+                                   form.setValue('branchIds', updatedBranches, { shouldValidate: true });
                                 }}
                               >
                                 <Check
