@@ -53,9 +53,17 @@ service cloud.firestore {
       allow update, delete: if isAdmin() && resource != null;
     }
 
-    // Temporarily allow read/write for all authenticated users for development
     match /lots/{lotId} {
-      allow read, write: if isSignedIn() && isNotBlacklisted();
+      allow read: if isSignedIn() && isNotBlacklisted();
+      allow write: if isAdmin(); // Only admins can write directly to the root lots collection
+    }
+
+    match /applications/{applicationId} {
+      allow read: if isSignedIn() && isNotBlacklisted() && (hasAccessToBranch(resource.data.branchId) || isOwner(resource.data.userId));
+      allow list: if isSignedIn() && isNotBlacklisted(); // Query will be filtered on client
+      allow create: if isSignedIn() && isNotBlacklisted() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && isNotBlacklisted() && hasAccessToBranch(resource.data.branchId);
+      allow delete: if isAdmin();
     }
     
     match /branches/{branchId}/procurementProcesses/{procurementProcessId} {
@@ -63,29 +71,21 @@ service cloud.firestore {
       allow create: if hasAccessToBranch(branchId);
       allow update, delete: if hasAccessToBranch(branchId) && resource != null;
 
-      match /lots/{lotId} {
+      // Lots are no longer nested here in rules, they are at the root
+      
+      match /receipts/{receiptId} {
         allow get, list: if hasAccessToBranch(branchId);
         allow create: if hasAccessToBranch(branchId);
         allow update, delete: if hasAccessToBranch(branchId) && resource != null;
-
-        match /receipts/{receiptId} {
-          allow get, list: if hasAccessToBranch(branchId);
-          allow create: if hasAccessToBranch(branchId);
-          allow update, delete: if hasAccessToBranch(branchId) && resource != null;
-        }
-
-        match /applications/{applicationId} {
-          allow get, list: if hasAccessToBranch(branchId);
-          allow create: if hasAccessToBranch(branchId) && request.resource.data.userId == request.auth.uid;
-          allow update, delete: if hasAccessToBranch(branchId) && resource != null;
-
-          match /allocations/{allocationId} {
-            allow get, list: if hasAccessToBranch(branchId);
-            allow create: if hasAccessToBranch(branchId);
-            allow update, delete: if hasAccessToBranch(branchId) && resource != null;
-          }
-        }
+      }
+      
+      match /applications/{applicationId}/allocations/{allocationId} {
+        allow get, list: if hasAccessToBranch(branchId);
+        allow create: if hasAccessToBranch(branchId);
+        allow update, delete: if hasAccessToBranch(branchId) && resource != null;
       }
     }
   }
 }
+
+    

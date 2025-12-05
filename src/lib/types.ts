@@ -30,6 +30,22 @@ export type Lot = {
   imageHint: string;
 };
 
+export type ApplicationStatus = 'Новая' | 'Принята' | 'Отклонена';
+
+export type Application = {
+  id: string;
+  lotId: string;
+  lotTitle?: string; // Denormalized for display
+  userId: string;
+  userName?: string; // Denormalized for display
+  applicationDate: string;
+  status: ApplicationStatus;
+  branchId: string; // Denormalized for filtering
+  branchName?: string; // Denormalized for display
+  procurementId: string; // Denormalized for filtering
+};
+
+
 export type Kpi = {
   title: string;
   value: string;
@@ -63,3 +79,5 @@ export type ProcurementProcess = {
 
 
 export const userRoles: UserRole[] = ['Администратор', 'Менеджер', 'Аналитик', 'Участник'];
+
+    
