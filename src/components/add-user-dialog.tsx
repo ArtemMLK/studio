@@ -47,6 +47,40 @@ interface AddUserDialogProps {
   onUserAdded: (newUser: Omit<User, 'id'>, generatedPassword: string) => void;
 }
 
+// 1. Обновленная Zod-схема
+const formSchema = z.object({
+  name: z.string().min(2, 'Имя должно содержать не менее 2 символов.'),
+  surname: z
+    .string()
+    .min(2, 'Фамилия должна содержать не менее 2 символов.'),
+  phone: z
+    .string()
+    .regex(/^7\d{10}$/, 'Неверный формат телефона. Пример: 79991234567'),
+  telegram: z
+    .string()
+    .optional()
+    .refine(
+      (value) => !value || value.startsWith('@'),
+      'Telegram должен начинаться с @'
+    ),
+  // Zod теперь явно проверяет, что каждая роль в массиве
+  // является одной из строк в константе userRoles.
+  roles: z.array(z.enum(userRoles)).min(1, 'Необходимо выбрать хотя бы одну роль.'),
+  branchIds: z.array(z.string()).min(1, 'Необходимо выбрать хотя бы один филиал.'),
+});
+
+// Добавляем проверку на уникальность телефона в схему отдельно,
+// так как она зависит от данных, загруженных хуком.
+const getFinalSchema = (existingUsers: User[] | null) => {
+    return formSchema.extend({
+        phone: formSchema.shape.phone.refine(
+            (value) => !existingUsers?.some((user) => user.phone === value),
+            'Этот телефон уже используется.'
+        ),
+    });
+};
+
+
 export function AddUserDialog({
   onUserAdded,
 }: AddUserDialogProps) {
@@ -56,38 +90,11 @@ export function AddUserDialog({
 
   const { data: existingUsers } = useUsers();
   const { data: branchesData } = useBranches(true);
-  
-  const formSchema = useMemo(() => z.object({
-    name: z.string().min(2, 'Имя должно содержать не менее 2 символов.'),
-    surname: z
-      .string()
-      .min(2, 'Фамилия должна содержать не менее 2 символов.'),
-    phone: z
-      .string()
-      .regex(
-        /^7\d{10}$/,
-        'Неверный формат телефона. Пример: 79991234567'
-      )
-      .refine(
-        (value) => !existingUsers?.some((user) => user.phone === value),
-        'Этот телефон уже используется.'
-      ),
-    telegram: z
-      .string()
-      .optional()
-      .refine(
-        (value) => !value || value.startsWith('@'),
-        'Telegram должен начинаться с @'
-      ),
-    // Используем z.enum для строгой валидации по списку userRoles
-    roles: z.array(z.enum(userRoles)).min(1, 'Необходимо выбрать хотя бы одну роль.'),
-    branchIds: z
-      .array(z.string())
-      .min(1, 'Необходимо выбрать хотя бы один филиал.'),
-  }), [existingUsers]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const finalFormSchema = useMemo(() => getFinalSchema(existingUsers), [existingUsers]);
+
+  const form = useForm<z.infer<typeof finalFormSchema>>({
+    resolver: zodResolver(finalFormSchema),
     defaultValues: {
       name: '',
       surname: '',
@@ -98,7 +105,7 @@ export function AddUserDialog({
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: z.infer<typeof finalFormSchema>) {
     console.log("SUBMIT values:", values);
     const generatedPassword = Math.random().toString(36).slice(-8);
 
@@ -114,6 +121,7 @@ export function AddUserDialog({
     form.reset();
   }
 
+  // 2. Переписанные обработчики и JSX
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -134,58 +142,13 @@ export function AddUserDialog({
             onSubmit={form.handleSubmit(onSubmit)}
             className="grid grid-cols-2 gap-4 py-4"
           >
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Имя</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Иван" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="surname"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Фамилия</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Иванов" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem className="col-span-2">
-                  <FormLabel>Телефон (Логин)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="79991234567" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="telegram"
-              render={({ field }) => (
-                <FormItem className="col-span-2">
-                  <FormLabel>Telegram</FormLabel>
-                  <FormControl>
-                    <Input placeholder="@ivanov_i" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Поля name, surname, phone, telegram без изменений */}
+            <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Имя</FormLabel><FormControl><Input placeholder="Иван" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+            <FormField control={form.control} name="surname" render={({ field }) => ( <FormItem><FormLabel>Фамилия</FormLabel><FormControl><Input placeholder="Иванов" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+            <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem className="col-span-2"><FormLabel>Телефон (Логин)</FormLabel><FormControl><Input placeholder="79991234567" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+            <FormField control={form.control} name="telegram" render={({ field }) => ( <FormItem className="col-span-2"><FormLabel>Telegram</FormLabel><FormControl><Input placeholder="@ivanov_i" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+
+            {/* Блок для выбора ролей */}
             <FormField
               control={form.control}
               name="roles"
@@ -223,18 +186,20 @@ export function AddUserDialog({
                               <CommandItem
                                 value={role}
                                 key={role}
-                                onSelect={() => {
-                                  const currentRoles = form.getValues('roles') || [];
-                                  const updatedRoles = currentRoles.includes(role)
-                                    ? currentRoles.filter(r => r !== role)
-                                    : [...currentRoles, role];
-                                  form.setValue('roles', updatedRoles, { shouldValidate: true });
+                                onSelect={(currentValue) => {
+                                  const current = field.value ?? [];
+                                  const updated = current.includes(currentValue as UserRole)
+                                    ? current.filter(r => r !== currentValue)
+                                    : [...current, currentValue as UserRole];
+                                  
+                                  console.log("ROLE SELECT", { clicked: currentValue, before: current, after: updated });
+                                  form.setValue('roles', updated, { shouldValidate: true });
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     'mr-2 h-4 w-4',
-                                    field.value.includes(role)
+                                    field.value?.includes(role)
                                       ? 'opacity-100'
                                       : 'opacity-0'
                                   )}
@@ -251,6 +216,8 @@ export function AddUserDialog({
                 </FormItem>
               )}
             />
+
+            {/* Блок для выбора филиалов */}
             <FormField
               control={form.control}
               name="branchIds"
@@ -267,11 +234,11 @@ export function AddUserDialog({
                           variant="outline"
                           role="combobox"
                           className={cn(
-                            'justify-between overflow-hidden',
+                            'justify-between overflow-hidden text-ellipsis',
                             !field.value?.length && 'text-muted-foreground'
                           )}
                         >
-                          {field.value?.length
+                           {field.value?.length
                             ? field.value.length > 2
                               ? `${field.value.length} филиалов выбрано`
                               : branchesData?.filter(b => field.value.includes(b.id)).map(b => b.name).join(', ')
@@ -282,9 +249,7 @@ export function AddUserDialog({
                     </PopoverTrigger>
                     <PopoverContent className="w-[300px] p-0">
                       <Command>
-                        <CommandInput 
-                          placeholder="Поиск филиала..."
-                        />
+                        <CommandInput placeholder="Поиск филиала..." />
                         <CommandList>
                            <CommandEmpty>Филиал не найден.</CommandEmpty>
                           <CommandGroup>
@@ -293,17 +258,19 @@ export function AddUserDialog({
                                 value={branch.id}
                                 key={branch.id}
                                 onSelect={(currentValue) => {
-                                   const currentBranches = form.getValues('branchIds') || [];
-                                   const updatedBranches = currentBranches.includes(currentValue)
-                                    ? currentBranches.filter(id => id !== currentValue)
-                                    : [...currentBranches, currentValue];
-                                   form.setValue('branchIds', updatedBranches, { shouldValidate: true });
+                                   const current = field.value ?? [];
+                                   const updated = current.includes(currentValue)
+                                    ? current.filter(id => id !== currentValue)
+                                    : [...current, currentValue];
+                                  
+                                   console.log("BRANCH SELECT", { clicked: currentValue, before: current, after: updated });
+                                   form.setValue('branchIds', updated, { shouldValidate: true });
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     'mr-2 h-4 w-4',
-                                    field.value.includes(branch.id)
+                                    field.value?.includes(branch.id)
                                       ? 'opacity-100'
                                       : 'opacity-0'
                                   )}
