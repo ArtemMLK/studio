@@ -1,8 +1,10 @@
 'use client';
 
 import { MoreHorizontal } from 'lucide-react';
+import { useState } from 'react';
 
 import { AddBranchDialog } from '@/components/add-branch-dialog';
+import { EditBranchDialog } from '@/components/edit-branch-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,15 +30,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { addBranch, useBranches } from '@/firebase/firestore/branches';
+import { addBranch, updateBranch, useBranches } from '@/firebase/firestore/branches';
 import { Branch } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBranchSelection } from '@/hooks/use-branch-selection.tsx';
+import { useToast } from '@/hooks/use-toast';
 
 export default function BranchesPage() {
   const { selectedBranchId } = useBranchSelection();
   const { data: branches, loading } = useBranches(false, selectedBranchId);
-
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const { toast } = useToast();
 
   const handleBranchAdded = (newBranchData: Omit<Branch, 'id' | 'userCount' | 'status'>) => {
     const newBranch: Omit<Branch, 'id'> = {
@@ -45,7 +49,14 @@ export default function BranchesPage() {
       status: 'Активен',
     };
     addBranch(newBranch);
+    toast({ title: 'Филиал добавлен', description: `Филиал "${newBranch.name}" успешно создан.` });
   };
+  
+  const handleBranchUpdated = (branchId: string, updatedData: Omit<Branch, 'id' | 'userCount' | 'status'>) => {
+    updateBranch(branchId, updatedData);
+    setEditingBranch(null);
+    toast({ title: 'Филиал обновлен', description: `Данные филиала "${updatedData.name}" успешно обновлены.` });
+  }
 
   return (
     <>
@@ -122,7 +133,9 @@ export default function BranchesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Действия</DropdownMenuLabel>
-                          <DropdownMenuItem>Редактировать</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setEditingBranch(branch)}>
+                            Редактировать
+                          </DropdownMenuItem>
                           <DropdownMenuItem>Деактивировать</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -134,6 +147,13 @@ export default function BranchesPage() {
           </Table>
         </CardContent>
       </Card>
+      {editingBranch && (
+        <EditBranchDialog
+          branch={editingBranch}
+          onBranchUpdated={handleBranchUpdated}
+          onOpenChange={(isOpen) => !isOpen && setEditingBranch(null)}
+        />
+      )}
     </>
   );
 }

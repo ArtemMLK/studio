@@ -2,7 +2,7 @@
 import { collection, query, where } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '..';
 import { Branch, User } from '@/lib/types';
-import { addDocumentNonBlocking } from '../non-blocking-updates';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '../non-blocking-updates';
 import { BRANCHES_COLLECTION, USERS_COLLECTION } from '@/lib/constants';
 import { useDoc } from '../firestore/use-doc.tsx';
 import { doc } from 'firebase/firestore';
@@ -66,4 +66,14 @@ export async function addBranch(branch: Omit<Branch, 'id'>) {
   }
   const branchesCollection = collection(firestore, BRANCHES_COLLECTION);
   await addDocumentNonBlocking(branchesCollection, branch);
+}
+
+
+export function updateBranch(branchId: string, data: Partial<Omit<Branch, 'id'>>) {
+    const firestore = useFirestore();
+    if (!firestore) {
+      throw new Error('Firestore is not initialized');
+    }
+    const branchDocRef = doc(firestore, BRANCHES_COLLECTION, branchId);
+    updateDocumentNonBlocking(branchDocRef, data);
 }
