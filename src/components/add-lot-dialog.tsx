@@ -39,11 +39,13 @@ import { Textarea } from './ui/textarea';
 
 interface AddLotDialogProps {
   onLotAdded: (newLot: Omit<Lot, 'id' | 'status' | 'imageHint'>) => void;
+  procurementId: string;
+  triggerButton?: React.ReactNode;
 }
 
 const formSchema = z.object({
   title: z.string().min(5, 'Название должно содержать не менее 5 символов.'),
-  procurementId: z.string().min(1, 'ID закупки обязателен.'),
+  procurementId: z.string(),
   plan: z.coerce.number().positive('План должен быть положительным числом.'),
   price: z.coerce.number().positive('Цена должна быть положительным числом.'),
   deadline: z.date({
@@ -53,20 +55,28 @@ const formSchema = z.object({
   currency: z.string().default('₽'),
 });
 
-export function AddLotDialog({ onLotAdded }: AddLotDialogProps) {
+export function AddLotDialog({ onLotAdded, procurementId, triggerButton }: AddLotDialogProps) {
   const [open, setOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
-      procurementId: '',
+      procurementId: procurementId,
       plan: 1,
       price: 0,
       imageUrl: '',
       currency: '₽',
     },
   });
+
+  // Keep procurementId in sync if it changes
+  form.watch((values, { name }) => {
+    if (name !== 'procurementId' && values.procurementId !== procurementId) {
+      form.setValue('procurementId', procurementId);
+    }
+  });
+
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const newLotData = {
@@ -81,9 +91,9 @@ export function AddLotDialog({ onLotAdded }: AddLotDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        {triggerButton ? triggerButton : <Button>
           <PlusCircle className="mr-2 h-4 w-4" /> Добавить лот
-        </Button>
+        </Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -105,19 +115,6 @@ export function AddLotDialog({ onLotAdded }: AddLotDialogProps) {
                   <FormLabel>Название лота</FormLabel>
                   <FormControl>
                     <Input placeholder="Например, 'Аренда офиса на год'" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="procurementId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ID закупки</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ЗАК-2024-001" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -211,6 +208,19 @@ export function AddLotDialog({ onLotAdded }: AddLotDialogProps) {
                 </FormItem>
               )}
             />
+             <FormField
+                control={form.control}
+                name="procurementId"
+                render={({ field }) => (
+                  <FormItem className="hidden">
+                    <FormLabel>ID Закупки</FormLabel>
+                    <FormControl>
+                      <Input {...field} readOnly/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             <DialogFooter className="pt-4">
               <Button type="submit">Создать лот</Button>
             </DialogFooter>

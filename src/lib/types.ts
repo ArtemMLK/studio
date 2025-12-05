@@ -46,5 +46,19 @@ export type Branch = {
   status: 'Активен' | 'Неактивен';
 };
 
+export type ProcurementStatus = 'Активен' | 'Завершен' | 'Архив';
+
+export type ProcurementProcess = {
+  id: string;
+  name: string;
+  description: string;
+  branchId: string;
+  branchName?: string; 
+  startDate: string;
+  endDate: string;
+  status: ProcurementStatus;
+  lotCount: number;
+};
+
 
 export const userRoles: UserRole[] = ['Администратор', 'Менеджер', 'Аналитик', 'Участник'];

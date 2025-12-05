@@ -2,7 +2,6 @@
 
 import Image from 'next/image';
 import { Search } from 'lucide-react';
-import { AddLotDialog } from '@/components/add-lot-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,39 +14,27 @@ import {
 import { Input } from '@/components/ui/input';
 import type { Lot } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { addLot, useLots } from '@/firebase/firestore/lots';
+import { useLots } from '@/firebase/firestore/lots';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function LotsPage() {
   const { data: lots, loading } = useLots();
 
-  const handleLotAdded = (newLotData: Omit<Lot, 'id' | 'status'>) => {
-    const newLot: Omit<Lot, 'id'> = {
-      ...newLotData,
-      status: 'Активен',
-      imageHint: 'custom lot',
-    };
-    addLot(newLot);
-  };
-
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Лоты</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Все Лоты</h1>
           <p className="text-muted-foreground">
-            Просмотр и управление доступными лотами.
+            Просмотр и управление всеми доступными лотами в системе.
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <AddLotDialog onLotAdded={handleLotAdded} />
-        </div>
       </div>
-      <div className="relative">
+      <div className="relative mt-4">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Поиск по лотам..." className="pl-8" />
+        <Input placeholder="Поиск по всем лотам..." className="pl-8" />
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {loading
           ? Array.from({ length: 8 }).map((_, i) => (
               <Card key={i} className="flex flex-col">
@@ -111,6 +98,14 @@ export default function LotsPage() {
               </Card>
             ))}
       </div>
+       {lots && lots.length === 0 && !loading && (
+        <div className="col-span-full mt-8 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+          <h3 className="text-xl font-semibold">Лотов пока нет</h3>
+          <p className="text-muted-foreground mt-2">
+            В системе еще не создано ни одного лота.
+          </p>
+        </div>
+      )}
     </>
   );
 }
