@@ -1,6 +1,7 @@
 
 'use client';
 
+import { hasAdminRole } from '@/lib/roles';
 import { MoreHorizontal } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import {
@@ -76,7 +77,7 @@ export function UsersTable() {
   const { toast } = useToast();
 
   const isLoading = usersLoading || branchesLoading;
-  const canManage = currentUserData?.roles.includes('Администратор');
+ const canManage = currentUserData ? hasAdminRole(currentUserData.roles) : false;
 
   const branchNameMap = useMemo(() => {
     if (!branches) return new Map();
