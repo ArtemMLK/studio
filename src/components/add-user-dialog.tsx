@@ -87,7 +87,6 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
   });
 
   function onSubmit(values: z.infer<typeof finalFormSchema>) {
-    console.log('SUBMIT values:', values);
     const generatedPassword = Math.random().toString(36).slice(-8);
 
     const newUser: Omit<User, 'id'> = {
@@ -186,7 +185,6 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
               name="roles"
               render={({ field }) => {
                 const value = Array.isArray(field.value) ? field.value : [];
-                console.log('FIELD ROLES RENDER', value);
                 return (
                   <FormItem className="col-span-2">
                     <FormLabel>Роли</FormLabel>
@@ -206,7 +204,6 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
                                 const updated = checked
                                   ? value.filter((r) => r !== role)
                                   : [...value, role as UserRole];
-                                console.log('ROLE TOGGLE', {
                                   role,
                                   before: value,
                                   after: updated,
@@ -231,7 +228,6 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
               name="branchIds"
               render={({ field }) => {
                 const value = Array.isArray(field.value) ? field.value : [];
-                console.log('FIELD BRANCHIDS RENDER', value);
                 return (
                   <FormItem className="col-span-2">
                     <FormLabel>Филиалы</FormLabel>
@@ -251,7 +247,6 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
                                 const updated = checked
                                   ? value.filter((id) => id !== branch.id)
                                   : [...value, branch.id];
-                                console.log('BRANCH TOGGLE', {
                                   id: branch.id,
                                   before: value,
                                   after: updated,
