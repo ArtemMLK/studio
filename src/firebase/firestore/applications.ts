@@ -6,6 +6,7 @@ import {
   Query,
   Firestore,
   doc,
+  onSnapshot,
 } from 'firebase/firestore';
 import { useFirestore, useUser } from '..';
 import { Application, ApplicationStatus } from '@/lib/types';
