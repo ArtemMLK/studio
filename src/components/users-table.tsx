@@ -65,9 +65,9 @@ export function UsersTable() {
   const { currentUserData } = useCurrentUserData();
 
   const [credentials, setCredentials] = useState<{
-    login: string;
-    password;
-  } | null>(null);
+  login: string;
+  password: string;
+} | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
