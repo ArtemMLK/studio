@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface NewUserCredentialsDialogProps {
   login: string;
-  password;
+  password: string;
   onClose: () => void;
 }
 
