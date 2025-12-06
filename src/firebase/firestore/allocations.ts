@@ -67,7 +67,6 @@ export function useAllocations() {
       q = query(q, ...whereClauses);
     }
 
-    console.log('allocations query', {
       collection: ALLOCATIONS_COLLECTION,
       filters: whereClauses.map((w) => ({
         field: w['_f'],
