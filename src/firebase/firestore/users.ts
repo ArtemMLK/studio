@@ -47,12 +47,15 @@ export function useUsers() {
 }
 
 // Note: The 'id' is the Firebase Auth UID.
-export function addUser(firestore: Firestore, user: Omit<User, 'id'>, id: string) {
+export async function addUser(firestore: Firestore, user: Omit<User, 'id'>, id: string) {
   if (!firestore) {
     throw new Error('Firestore is not initialized');
   }
   const userDocRef = doc(firestore, USERS_COLLECTION, id);
-  setDoc(userDocRef, user).catch(error => {
+  
+  try {
+    await setDoc(userDocRef, user);
+  } catch (error) {
     errorEmitter.emit(
       'permission-error',
       new FirestorePermissionError({
@@ -61,8 +64,10 @@ export function addUser(firestore: Firestore, user: Omit<User, 'id'>, id: string
         requestResourceData: user,
       })
     );
-  });
+    throw error;
+  }
 }
+
 
 
 export function updateUser(firestore: Firestore, userId: string, data: Partial<User>) {
