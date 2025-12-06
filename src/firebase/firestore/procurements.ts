@@ -52,7 +52,6 @@ export function useProcurementProcesses() {
     
     if (targetBranchIds.length === 0) return [];
 
-     console.log('useProcurementProcesses Queries for branchIds:', targetBranchIds);
 
     return targetBranchIds.map(branchId =>
       query(
