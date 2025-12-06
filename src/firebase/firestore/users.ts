@@ -1,4 +1,3 @@
-
 'use client';
 import {
   collection,
@@ -67,8 +66,6 @@ export async function addUser(firestore: Firestore, user: Omit<User, 'id'>, id: 
     throw error;
   }
 }
-
-
 
 export function updateUser(firestore: Firestore, userId: string, data: Partial<User>) {
     if (!firestore) {
