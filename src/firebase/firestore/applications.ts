@@ -80,7 +80,6 @@ export function useApplications() {
       q = query(q, ...whereClauses);
     }
 
-    console.log('applications query', {
       collection: APPLICATIONS_COLLECTION,
       filters: whereClauses.map((w) => ({
         field: w['_f'],
