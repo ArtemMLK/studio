@@ -75,7 +75,6 @@ export function useLots(procurementId?: string) {
       q = query(q, ...whereClauses);
     }
 
-    console.log('useLots Query:', {
       path: 'lots',
       filters: whereClauses.map((w) => ({
         field: w['_f'],
