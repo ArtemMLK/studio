@@ -5,6 +5,7 @@ import {
   setDoc,
   deleteDoc,
   Firestore,
+  onSnapshot,
 } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '..';
 import { User } from '@/lib/types';
@@ -45,16 +46,30 @@ export function useUsers() {
   return { data: finalData || [], isLoading: finalIsLoading, error };
 }
 
-// Note: The 'id' is the Firebase Auth UID.
-export async function addUser(firestore: Firestore, user: Omit<User, 'id'>, id: string) {
+/**
+ * Adds a new user to Firestore with error handling and rollback support.
+ * Note: The 'id' is the Firebase Auth UID.
+ * 
+ * @param firestore - Firestore instance
+ * @param user - User data (without _id field)
+ * @param id - Firebase Auth UID
+ * @throws {Error} If Firestore is not initialized or document creation fails
+ */
+export async function addUser(
+  firestore: Firestore,
+  user: Omit<User, '_id'>,
+  id: string
+): Promise<void> {
   if (!firestore) {
     throw new Error('Firestore is not initialized');
   }
+
   const userDocRef = doc(firestore, USERS_COLLECTION, id);
   
   try {
     await setDoc(userDocRef, user);
   } catch (error) {
+    // Emit permission error for UI feedback
     errorEmitter.emit(
       'permission-error',
       new FirestorePermissionError({
@@ -63,34 +78,96 @@ export async function addUser(firestore: Firestore, user: Omit<User, 'id'>, id: 
         requestResourceData: user,
       })
     );
+    
+    // Rollback: attempt to delete the document if it was partially created
+    try {
+      await deleteDoc(userDocRef);
+    } catch (rollbackError) {
+      console.error('Rollback failed - could not delete partially created user:', rollbackError);
+    }
+    
+    // Re-throw the original error for caller to handle
     throw error;
   }
 }
 
-export function updateUser(firestore: Firestore, userId: string, data: Partial<User>) {
-    if (!firestore) {
-      throw new Error('Firestore is not initialized');
-    }
-    const userDocRef = doc(firestore, USERS_COLLECTION, userId);
-    updateDocumentNonBlocking(userDocRef, data);
+/**
+ * Updates an existing user document in Firestore.
+ * Uses non-blocking updates to avoid blocking the UI.
+ * 
+ * @param firestore - Firestore instance
+ * @param userId - Firebase Auth UID
+ * @param data - Partial user data to update
+ */
+export function updateUser(
+  firestore: Firestore,
+  userId: string,
+  data: Partial<User>
+): void {
+  if (!firestore) {
+    throw new Error('Firestore is not initialized');
+  }
+  
+  const userDocRef = doc(firestore, USERS_COLLECTION, userId);
+  updateDocumentNonBlocking(userDocRef, data);
 }
 
-// This function needs to be improved to handle auth deletion as well.
-// For now, it just deletes the Firestore document.
-export async function deleteUser(firestore: Firestore, userId: string) {
-    if (!firestore) {
-        throw new Error('Firestore is not initialized');
+/**
+ * Deletes a user document from Firestore.
+ * 
+ * Note: This function only deletes the Firestore document.
+ * In a real application, you should also delete the user from Firebase Auth,
+ * which requires a backend operation for security reasons.
+ * 
+ * @param firestore - Firestore instance
+ * @param userId - Firebase Auth UID
+ * @throws {Error} If Firestore is not initialized or deletion fails
+ */
+export async function deleteUser(firestore: Firestore, userId: string): Promise<void> {
+  if (!firestore) {
+    throw new Error('Firestore is not initialized');
+  }
+
+  const userDocRef = doc(firestore, USERS_COLLECTION, userId);
+  
+  // We await this because we want to show feedback to the user
+  // In a real app, you would also need to delete the user from Firebase Auth
+  // which is a backend operation.
+  try {
+    await deleteDoc(userDocRef);
+  } catch (error) {
+    console.error('Error deleting user document:', error);
+    throw error;
+  }
+}
+
+/**
+ * Sets up a real-time listener for user document changes.
+ * 
+ * @param firestore - Firestore instance
+ * @param userId - Firebase Auth UID
+ * @param callback - Function called when user data changes
+ * @returns Unsubscribe function to stop listening
+ */
+export function subscribeToUser(
+  firestore: Firestore,
+  userId: string,
+  callback: (user: User | null) => void
+): () => void {
+  if (!firestore) {
+    throw new Error('Firestore is not initialized');
+  }
+
+  const userDocRef = doc(firestore, USERS_COLLECTION, userId);
+  
+  return onSnapshot(userDocRef, (docSnap) => {
+    if (docSnap.exists()) {
+      callback(docSnap.data() as User);
+    } else {
+      callback(null);
     }
-    const userDocRef = doc(firestore, USERS_COLLECTION, userId);
-    
-    // We will await this because we want to show feedback to the user
-    // In a real app, you would also need to delete the user from Firebase Auth
-    // which is a backend operation.
-    try {
-        await deleteDoc(userDocRef);
-    } catch (error) {
-        console.error("Error deleting user document:", error);
-        // We can optionally re-throw or handle it specifically for the UI
-        throw error;
-    }
+  }, (error) => {
+    console.error('Error subscribing to user:', error);
+    errorEmitter.emit('subscription-error', error);
+  });
 }
