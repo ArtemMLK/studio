@@ -1,5 +1,6 @@
 'use client';
 
+import { userRoles } from '@/lib/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -64,8 +65,8 @@ const formSchema = z.object({
       'Telegram должен начинаться с @'
     ),
   roles: z
-    .array(z.string())
-    .min(1, 'Необходимо выбрать хотя бы одну роль.'),
+  .array(z.enum(userRoles))
+  .min(1, 'Необходимо выбрать хотя бы одну роль.'),
   branchIds: z
     .array(z.string())
     .min(1, 'Необходимо выбрать хотя бы один филиал.'),
