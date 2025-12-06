@@ -1,12 +1,14 @@
 
 'use client';
 
+import { signOut } from 'firebase/auth';
 import { hasAdminRole } from '@/lib/roles';
 import { MoreHorizontal } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  signOut, // ← Добавить если нет
 } from 'firebase/auth';
 
 import { AddUserDialog } from '@/components/add-user-dialog';
@@ -84,47 +86,52 @@ export function UsersTable() {
     return new Map(branches.map(branch => [branch.id, branch.name]));
   }, [branches]);
 
-  const handleUserAdded = async (newUser: Omit<User, 'id'>, generatedPassword) => {
-    if (!auth) {
-      toast({
-        variant: 'destructive',
-        title: 'Ошибка',
-        description: 'Сервис аутентификации не инициализирован.',
-      });
-      return;
-    }
-    if (!firestore) {
-        toast({
-            variant: 'destructive',
-            title: 'Ошибка',
-            description: 'Сервис базы данных не инициализирован.',
-        });
-        return;
-    }
+  const handleUserAdded = async (newUser: Omit<User, 'id'>, generatedPassword: string) => {
+  if (!auth || !firestore || !currentUserData) {
+    toast({ variant: 'destructive', title: 'Ошибка', description: 'Сервисы не инициализированы.' });
+    return;
+  }
 
-    try {
-      // The login is the phone number, we create a dummy email for Firebase Auth
-      const email = `${newUser.login}@proflow.com`;
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        generatedPassword
-      );
-      const firebaseUser = userCredential.user;
+  let createdUserId: string | null = null;
 
-      // Now add the user data to Firestore with the UID from Auth
-      addUser(firestore, { ...newUser }, firebaseUser.uid);
-      
-      setCredentials({ login: newUser.login, password: generatedPassword });
-    } catch (error: any) {
-      console.error('Error creating user:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Ошибка создания пользователя',
-        description: error.message,
-      });
+  try {
+    const email = `${newUser.login}@proflow.com`;
+    const userCredential = await createUserWithEmailAndPassword(auth, email, generatedPassword);
+    const firebaseUser = userCredential.user;
+    createdUserId = firebaseUser.uid;
+
+    // КРИТИЧНО: Ожидаем запись в Firestore
+    await addUser(firestore, { ...newUser }, firebaseUser.uid);
+    
+    // КРИТИЧНО: Сразу выходим из сессии нового пользователя
+    await signOut(auth);
+    
+    setCredentials({ login: newUser.login, password: generatedPassword });
+    toast({
+      title: 'Пользователь создан',
+      description: 'Администратор должен войти заново.',
+      duration: 10000,
+    });
+  } catch (error: any) {
+    console.error('Error creating user:', error);
+    
+    // Rollback: если пользователь создан в Auth, но ошибка при Firestore — удаляем из Auth
+    if (createdUserId && auth.currentUser?.uid === createdUserId) {
+      try {
+        await auth.currentUser?.delete();
+        console.log('Rollback: удалён пользователь из Firebase Auth');
+      } catch (deleteError) {
+        console.error('Не удалось выполнить rollback:', deleteError);
+      }
     }
-  };
+    
+    toast({
+      variant: 'destructive',
+      title: 'Ошибка создания пользователя',
+      description: error.message,
+    });
+  }
+};
 
   const handleUserUpdated = (userId: string, updatedData: Partial<User>) => {
     if (!firestore) return;
