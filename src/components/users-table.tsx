@@ -1,4 +1,3 @@
-
 'use client';
 
 import { signOut } from 'firebase/auth';
@@ -8,7 +7,6 @@ import { useState, useMemo } from 'react';
 import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  signOut, // ← Добавить если нет
 } from 'firebase/auth';
 
 import { AddUserDialog } from '@/components/add-user-dialog';
@@ -67,19 +65,18 @@ export function UsersTable() {
   const { currentUserData } = useCurrentUserData();
 
   const [credentials, setCredentials] = useState<{
-  login: string;
-  password: string;
-} | null>(null);
+    login: string;
+    password: string;
+  } | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-
 
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
 
   const isLoading = usersLoading || branchesLoading;
- const canManage = currentUserData ? hasAdminRole(currentUserData.roles) : false;
+  const canManage = currentUserData ? hasAdminRole(currentUserData.roles) : false;
 
   const branchNameMap = useMemo(() => {
     if (!branches) return new Map();
@@ -87,51 +84,51 @@ export function UsersTable() {
   }, [branches]);
 
   const handleUserAdded = async (newUser: Omit<User, 'id'>, generatedPassword: string) => {
-  if (!auth || !firestore || !currentUserData) {
-    toast({ variant: 'destructive', title: 'Ошибка', description: 'Сервисы не инициализированы.' });
-    return;
-  }
-
-  let createdUserId: string | null = null;
-
-  try {
-    const email = `${newUser.login}@proflow.com`;
-    const userCredential = await createUserWithEmailAndPassword(auth, email, generatedPassword);
-    const firebaseUser = userCredential.user;
-    createdUserId = firebaseUser.uid;
-
-    // КРИТИЧНО: Ожидаем запись в Firestore
-    await addUser(firestore, { ...newUser }, firebaseUser.uid);
-    
-    // КРИТИЧНО: Сразу выходим из сессии нового пользователя
-    await signOut(auth);
-    
-    setCredentials({ login: newUser.login, password: generatedPassword });
-    toast({
-      title: 'Пользователь создан',
-      description: 'Администратор должен войти заново.',
-      duration: 10000,
-    });
-  } catch (error: any) {
-    console.error('Error creating user:', error);
-    
-    // Rollback: если пользователь создан в Auth, но ошибка при Firestore — удаляем из Auth
-    if (createdUserId && auth.currentUser?.uid === createdUserId) {
-      try {
-        await auth.currentUser?.delete();
-        console.log('Rollback: удалён пользователь из Firebase Auth');
-      } catch (deleteError) {
-        console.error('Не удалось выполнить rollback:', deleteError);
-      }
+    if (!auth || !firestore || !currentUserData) {
+      toast({ variant: 'destructive', title: 'Ошибка', description: 'Сервисы не инициализированы.' });
+      return;
     }
-    
-    toast({
-      variant: 'destructive',
-      title: 'Ошибка создания пользователя',
-      description: error.message,
-    });
-  }
-};
+
+    let createdUserId: string | null = null;
+
+    try {
+      const email = `${newUser.login}@proflow.com`;
+      const userCredential = await createUserWithEmailAndPassword(auth, email, generatedPassword);
+      const firebaseUser = userCredential.user;
+      createdUserId = firebaseUser.uid;
+
+      // КРИТИЧНО: Ожидаем запись в Firestore
+      await addUser(firestore, { ...newUser }, firebaseUser.uid);
+      
+      // КРИТИЧНО: Сразу выходим из сессии нового пользователя
+      await signOut(auth);
+      
+      setCredentials({ login: newUser.login, password: generatedPassword });
+      toast({
+        title: 'Пользователь создан',
+        description: 'Администратор должен войти заново.',
+        duration: 10000,
+      });
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      
+      // Rollback: если пользователь создан в Auth, но ошибка при Firestore — удаляем из Auth
+      if (createdUserId && auth.currentUser?.uid === createdUserId) {
+        try {
+          await auth.currentUser?.delete();
+          console.log('Rollback: удалён пользователь из Firebase Auth');
+        } catch (deleteError) {
+          console.error('Не удалось выполнить rollback:', deleteError);
+        }
+      }
+      
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка создания пользователя',
+        description: error.message,
+      });
+    }
+  };
 
   const handleUserUpdated = (userId: string, updatedData: Partial<User>) => {
     if (!firestore) return;
@@ -140,10 +137,9 @@ export function UsersTable() {
     toast({ title: 'Пользователь обновлен', description: `Данные пользователя успешно обновлены.` });
   };
 
-
   const handleResetPassword = (login: string) => {
-     if (!auth) return;
-     const email = `${login}@proflow.com`;
+    if (!auth) return;
+    const email = `${login}@proflow.com`;
     sendPasswordResetEmail(auth, email)
       .then(() => {
         toast({
@@ -186,19 +182,18 @@ export function UsersTable() {
     }
   };
 
-
   const toggleUserBlacklist = (userId: string, isBlacklisted: boolean) => {
     if (!firestore) return;
     updateUser(firestore, userId, { blacklisted: !isBlacklisted });
-     toast({
-        title: 'Статус пользователя обновлен',
-        description: `Пользователь был ${!isBlacklisted ? 'заблокирован' : 'разблокирован'}.`
+    toast({
+      title: 'Статус пользователя обновлен',
+      description: `Пользователь был ${!isBlacklisted ? 'заблокирован' : 'разблокирован'}.`
     });
   };
 
   return (
     <>
-       <div className="flex items-center justify-between space-y-2">
+      <div className="flex items-center justify-between space-y-2">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Пользователи</h1>
           <p className="text-muted-foreground">
@@ -206,7 +201,7 @@ export function UsersTable() {
           </p>
         </div>
         {canManage && (
-            <AddUserDialog onUserAdded={handleUserAdded} />
+          <AddUserDialog onUserAdded={handleUserAdded} />
         )}
       </div>
       <Card className="mt-4">
@@ -296,7 +291,7 @@ export function UsersTable() {
                       {user.login}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                       {user.branchIds.map(id => branchNameMap.get(id) || id).join(', ')}
+                      {user.branchIds.map(id => branchNameMap.get(id) || id).join(', ')}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -373,7 +368,7 @@ export function UsersTable() {
           onClose={() => setCredentials(null)}
         />
       )}
-       <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
