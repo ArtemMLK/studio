@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -37,7 +37,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { userRoles, type User, type UserRole } from '@/lib/types';
+import { userRoles, type User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useBranches } from '@/firebase/firestore/branches';
 
@@ -52,13 +52,10 @@ const formSchema = z.object({
   surname: z
     .string()
     .min(2, 'Фамилия должна содержать не менее 2 символов.'),
-  login: z.string(), // Read-only, but keep for structure
+  login: z.string(),
   phone: z
     .string()
-    .regex(
-      /^7\d{10}$/,
-      'Неверный формат телефона. Пример: 79991234567'
-    ),
+    .regex(/^7\d{10}$/, 'Неверный формат телефона. Пример: 79991234567'),
   telegram: z
     .string()
     .optional()
@@ -73,6 +70,9 @@ const formSchema = z.object({
     .array(z.string())
     .min(1, 'Необходимо выбрать хотя бы один филиал.'),
 });
+
+const safeUnformatPhone = (value: unknown): string =>
+  typeof value === 'string' ? value.replace(/\D/g, '') : '';
 
 export function EditUserDialog({
   user,
@@ -91,7 +91,7 @@ export function EditUserDialog({
       name: user.name,
       surname: user.surname,
       login: user.login,
-      phone: user.phone,
+      phone: safeUnformatPhone(user.phone),
       telegram: user.telegram || '',
       roles: Array.isArray(user.roles) ? user.roles : [user.roles],
       branchIds: user.branchIds,
@@ -103,7 +103,7 @@ export function EditUserDialog({
       name: user.name,
       surname: user.surname,
       login: user.login,
-      phone: user.phone,
+      phone: safeUnformatPhone(user.phone),
       telegram: user.telegram || '',
       roles: Array.isArray(user.roles) ? user.roles : [user.roles],
       branchIds: user.branchIds,
@@ -111,7 +111,6 @@ export function EditUserDialog({
   }, [user, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // We don't update login (email) or password here
     const { login, ...updateData } = values;
     onUserUpdated(user.id, updateData);
     handleClose();
@@ -149,6 +148,7 @@ export function EditUserDialog({
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="surname"
@@ -162,6 +162,7 @@ export function EditUserDialog({
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="login"
@@ -175,6 +176,7 @@ export function EditUserDialog({
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="phone"
@@ -188,6 +190,7 @@ export function EditUserDialog({
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="telegram"
@@ -201,6 +204,7 @@ export function EditUserDialog({
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="roles"
@@ -240,19 +244,13 @@ export function EditUserDialog({
                                 key={role}
                                 onSelect={() => {
                                   const currentValue = form.getValues('roles');
-                                  if (currentValue.includes(role)) {
-                                    form.setValue(
-                                      'roles',
-                                      currentValue.filter((r) => r !== role),
-                                      { shouldValidate: true }
-                                    );
-                                  } else {
-                                    form.setValue(
-                                      'roles',
-                                      [...currentValue, role],
-                                      { shouldValidate: true }
-                                    );
-                                  }
+                                  const exists = currentValue.includes(role);
+                                  const updated = exists
+                                    ? currentValue.filter((r) => r !== role)
+                                    : [...currentValue, role];
+                                  form.setValue('roles', updated, {
+                                    shouldValidate: true,
+                                  });
                                 }}
                               >
                                 <Check
@@ -275,6 +273,7 @@ export function EditUserDialog({
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="branchIds"
@@ -321,21 +320,16 @@ export function EditUserDialog({
                                 onSelect={() => {
                                   const currentValue =
                                     form.getValues('branchIds');
-                                  if (currentValue.includes(branch.id)) {
-                                    form.setValue(
-                                      'branchIds',
-                                      currentValue.filter(
+                                  const exists =
+                                    currentValue.includes(branch.id);
+                                  const updated = exists
+                                    ? currentValue.filter(
                                         (b) => b !== branch.id
-                                      ),
-                                      { shouldValidate: true }
-                                    );
-                                  } else {
-                                    form.setValue(
-                                      'branchIds',
-                                      [...currentValue, branch.id],
-                                      { shouldValidate: true }
-                                    );
-                                  }
+                                      )
+                                    : [...currentValue, branch.id];
+                                  form.setValue('branchIds', updated, {
+                                    shouldValidate: true,
+                                  });
                                 }}
                               >
                                 <Check
@@ -360,7 +354,7 @@ export function EditUserDialog({
             />
 
             <DialogFooter className="col-span-2 mt-4">
-               <Button type="button" variant="outline" onClick={handleClose}>
+              <Button type="button" variant="outline" onClick={handleClose}>
                 Отмена
               </Button>
               <Button type="submit">Сохранить изменения</Button>
