@@ -50,7 +50,6 @@ export function useBranches(all: boolean = false) {
       }
     }
 
-    console.log('useBranches Query:', {
         path: finalQuery ? 'branches' : 'null',
         filters,
         isAdmin,
